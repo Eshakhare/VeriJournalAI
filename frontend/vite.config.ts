@@ -5,22 +5,21 @@ import { defineConfig } from 'vite';
 
 export default defineConfig(() => {
   return {
-    root: 'frontend',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './frontend/src'),
+        '@': path.resolve(__dirname, './src'),
       },
-    },
-    build: {
-      outDir: path.resolve(__dirname, './dist'),
-      emptyOutDir: true,
     },
     server: {
       port: 3000,
       host: '0.0.0.0',
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+    },
+    build: {
+      outDir: path.resolve(__dirname, '../dist'),
+      emptyOutDir: true,
     },
   };
 });

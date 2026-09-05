@@ -100,3 +100,30 @@ Every verification submission (`POST /verify/*`) responds with **HTTP 202 Accept
   - Automatically simulates realistic 202 asynchronous operations, progressive stage transitions, ETag caching, cancel/retry, and sample fact-checks.
 - **Production (`VITE_API_BASE_URL` configured)**:
   - Disables dev mocking and proxies all requests to the backend server with standard `Authorization: Bearer <firebase_id_token>` authentication headers.
+
+---
+
+## 7. Project Directory Structure
+
+```
+├── frontend/                     # All frontend-related source, config & assets
+│   ├── src/
+│   │   ├── components/           # UI components (Ledger, Timeline, Reflection, etc.)
+│   │   ├── context/              # Auth & Navigation contexts
+│   │   ├── services/             # API client, Mock adapter, Sanitizer, Security
+│   │   ├── types/                # TypeScript contracts & models
+│   │   ├── App.tsx               # Root application component
+│   │   ├── main.tsx              # Application mount point
+│   │   └── index.css             # Tailwind v4 theme styling
+│   ├── public/                   # Static assets & icons
+│   ├── index.html                # Frontend HTML entry point
+│   ├── package.json              # Standalone frontend package manifest
+│   ├── tsconfig.json             # Frontend TypeScript configuration
+│   └── vite.config.ts            # Frontend Vite configuration
+├── contracts/                    # OpenAPI 3.1 & operational contracts
+├── firestore.rules               # Strict owner-isolated database security rules
+└── tests/                        # Automated test suites (Unit & Integration)
+    ├── unit/
+    └── integration/
+```
+

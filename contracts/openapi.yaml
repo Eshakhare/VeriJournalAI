@@ -1,0 +1,679 @@
+openapi: 3.1.0
+info:
+  title: VeriJournal AI API
+  version: 1.0.0
+  description: Canonical contract shared by Google AI Studio and Antigravity. Changes require a documented contract migration.
+servers:
+  - url: /api/v1
+security:
+  - firebaseBearer: []
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      security: []
+      responses:
+        "200":
+          description: Minimal liveness response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /me/capabilities:
+    get:
+      operationId: getCapabilities
+      responses:
+        "200":
+          description: Effective presentation capabilities for the authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapabilitiesResponse"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /verifications/text:
+    post:
+      operationId: submitTextVerification
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TextVerificationRequest"
+      responses:
+        "202":
+          $ref: "#/components/responses/AcceptedOperation"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /verifications/url:
+    post:
+      operationId: submitUrlVerification
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UrlVerificationRequest"
+      responses:
+        "202":
+          $ref: "#/components/responses/AcceptedOperation"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /verifications/social:
+    post:
+      operationId: submitSocialVerification
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SocialVerificationRequest"
+      responses:
+        "202":
+          $ref: "#/components/responses/AcceptedOperation"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /verifications/media:
+    post:
+      operationId: submitMediaVerification
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/MediaVerificationRequest"
+      responses:
+        "202":
+          $ref: "#/components/responses/AcceptedOperation"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /operations/{operationId}:
+    parameters:
+      - $ref: "#/components/parameters/OperationId"
+    get:
+      operationId: getOperation
+      parameters:
+        - name: If-None-Match
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Current owner-scoped operation state
+          headers:
+            ETag:
+              schema:
+                type: string
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationStatus"
+        "304":
+          description: State has not changed
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /operations/{operationId}/cancel:
+    post:
+      operationId: cancelOperation
+      parameters:
+        - $ref: "#/components/parameters/OperationId"
+      responses:
+        "200":
+          description: Cancellation requested or already terminal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationStatus"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /operations/{operationId}/retry:
+    post:
+      operationId: retryOperation
+      parameters:
+        - $ref: "#/components/parameters/OperationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          $ref: "#/components/responses/AcceptedOperation"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /journal/entries:
+    get:
+      operationId: listJournalEntries
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            maxLength: 512
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        "200":
+          description: Cursor-paginated entries for the authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntryPage"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /journal/entries/{entryId}:
+    parameters:
+      - $ref: "#/components/parameters/EntryId"
+    get:
+      operationId: getJournalEntry
+      responses:
+        "200":
+          description: Complete owner-scoped journal report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntry"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+    delete:
+      operationId: deleteJournalEntry
+      responses:
+        "204":
+          description: Entry and associated derived data scheduled for deletion
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /journal/entries/{entryId}/reflection:
+    put:
+      operationId: updateReflection
+      parameters:
+        - $ref: "#/components/parameters/EntryId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReflectionUpdate"
+      responses:
+        "200":
+          description: Updated user-authored reflection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reflection"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /journal/entries/{entryId}/chat:
+    post:
+      operationId: chatAboutEntry
+      parameters:
+        - $ref: "#/components/parameters/EntryId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+      responses:
+        "200":
+          description: Authenticated fetch stream using SSE-formatted events
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+  /me/export:
+    post:
+      operationId: createUserExport
+      responses:
+        "202":
+          $ref: "#/components/responses/AcceptedOperation"
+        default:
+          $ref: "#/components/responses/ErrorResponse"
+components:
+  securitySchemes:
+    firebaseBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: Firebase-ID-token
+  parameters:
+    OperationId:
+      name: operationId
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Identifier"
+    EntryId:
+      name: entryId
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Identifier"
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 16
+        maxLength: 128
+  responses:
+    AcceptedOperation:
+      description: Durable verification/export operation accepted
+      headers:
+        Location:
+          required: true
+          schema:
+            type: string
+        Retry-After:
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/OperationAccepted"
+    ErrorResponse:
+      description: Public error response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+  schemas:
+    Identifier:
+      type: string
+      pattern: "^[A-Za-z0-9_-]{16,128}$"
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          const: ok
+    CapabilitiesResponse:
+      type: object
+      additionalProperties: false
+      required: [contractVersion, capabilities]
+      properties:
+        contractVersion:
+          const: "1.0"
+        capabilities:
+          type: object
+          additionalProperties: false
+          required: [textVerification, urlVerification, socialVerification, imageProvenance, youtubeVideo, shortVideoUpload, c2paInspection, maps, appCheckEnforced, maintenanceMode]
+          properties:
+            textVerification: {type: boolean}
+            urlVerification: {type: boolean}
+            socialVerification: {type: boolean}
+            imageProvenance: {type: boolean}
+            youtubeVideo: {type: boolean}
+            shortVideoUpload: {type: boolean}
+            c2paInspection: {type: boolean}
+            maps: {type: boolean}
+            appCheckEnforced:
+              type: boolean
+              description: Whether protected client requests must include a valid Firebase App Check token in addition to authentication.
+            maintenanceMode:
+              type: boolean
+              description: When true, submission and mutation experiences must be disabled and the UI must present maintenance status.
+    ReflectionSeed:
+      type: object
+      additionalProperties: false
+      properties:
+        initialReflection:
+          type: [string, "null"]
+          maxLength: 2000
+        initialConfidence:
+          type: [integer, "null"]
+          minimum: 0
+          maximum: 100
+    TextVerificationRequest:
+      type: object
+      additionalProperties: false
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 3
+          maxLength: 30000
+        initialReflection:
+          type: [string, "null"]
+          maxLength: 2000
+        initialConfidence:
+          type: [integer, "null"]
+          minimum: 0
+          maximum: 100
+    UrlVerificationRequest:
+      type: object
+      additionalProperties: false
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+          maxLength: 2048
+        initialReflection:
+          type: [string, "null"]
+          maxLength: 2000
+        initialConfidence:
+          type: [integer, "null"]
+          minimum: 0
+          maximum: 100
+    SocialVerificationRequest:
+      type: object
+      additionalProperties: false
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+          maxLength: 2048
+        accompanyingClaim:
+          type: [string, "null"]
+          maxLength: 5000
+        initialReflection:
+          type: [string, "null"]
+          maxLength: 2000
+        initialConfidence:
+          type: [integer, "null"]
+          minimum: 0
+          maximum: 100
+    MediaVerificationRequest:
+      type: object
+      additionalProperties: false
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+        accompanyingClaim:
+          type: [string, "null"]
+          maxLength: 5000
+        initialReflection:
+          type: [string, "null"]
+          maxLength: 2000
+        initialConfidence:
+          type: [integer, "null"]
+          minimum: 0
+          maximum: 100
+        saveExactGps:
+          type: boolean
+          default: false
+    OperationAccepted:
+      type: object
+      additionalProperties: false
+      required: [contractVersion, operationId, status, statusUrl]
+      properties:
+        contractVersion:
+          const: "1.0"
+        operationId:
+          $ref: "#/components/schemas/Identifier"
+        status:
+          const: queued
+        statusUrl:
+          type: string
+    OperationStatus:
+      type: object
+      additionalProperties: false
+      required: [contractVersion, operationId, status, stage, progressPercent, completedStages, updatedAt]
+      properties:
+        contractVersion:
+          const: "1.0"
+        operationId:
+          $ref: "#/components/schemas/Identifier"
+        status:
+          $ref: "#/components/schemas/OperationState"
+        stage:
+          $ref: "#/components/schemas/OperationStage"
+        progressPercent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        message:
+          type: [string, "null"]
+          maxLength: 300
+        completedStages:
+          type: array
+          maxItems: 12
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/OperationStage"
+        partialResult:
+          oneOf:
+            - $ref: "#/components/schemas/ValidatedPartialResult"
+            - type: "null"
+        resultUrl:
+          type: [string, "null"]
+        error:
+          oneOf:
+            - $ref: "#/components/schemas/ApiError"
+            - type: "null"
+        updatedAt:
+          type: string
+          format: date-time
+    OperationState:
+      type: string
+      enum: [pending, queued, processing, partial, complete, failed, cancelled]
+    OperationStage:
+      type: string
+      enum: [validating_input, checking_url, extracting_content, extracting_claims, checking_fact_checks, retrieving_evidence, analyzing_media, building_timeline, saving_report, complete]
+    ValidatedPartialResult:
+      type: object
+      additionalProperties: false
+      properties:
+        safeBrowsingStatus:
+          type: [string, "null"]
+          enum: [known_threat, no_known_threat, unavailable, null]
+        publisherRegistryMatch:
+          type: [string, "null"]
+          enum: [recognized, unknown, possible_impersonation, not_applicable, null]
+        claims:
+          type: array
+          maxItems: 3
+          items:
+            $ref: "#/components/schemas/Claim"
+        analysisCoverage:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [complete, partial, unavailable, not_applicable, not_completed]
+    FactCheckProviderStatus:
+      type: string
+      enum: [matched, no_match, unavailable, invalid_response, disabled]
+    EvidenceStatus:
+      type: string
+      enum: [supported, contradicted, mixed, insufficient_evidence, could_not_complete]
+    EvidenceConfidence:
+      type: string
+      enum: [low, medium, high]
+    ConsistencyStatus:
+      type: string
+      enum: [consistent, conflicting, unknown, not_analyzed]
+    Claim:
+      type: object
+      additionalProperties: false
+      required: [claimId, claimText, checkWorthiness]
+      properties:
+        claimId:
+          $ref: "#/components/schemas/Identifier"
+        claimText:
+          type: string
+          maxLength: 2000
+        speaker:
+          type: [string, "null"]
+          maxLength: 300
+        claimDate:
+          type: [string, "null"]
+          format: date-time
+        locations:
+          type: array
+          maxItems: 10
+          items: {type: string, maxLength: 300}
+        entities:
+          type: array
+          maxItems: 20
+          items: {type: string, maxLength: 300}
+        checkWorthiness:
+          type: string
+          enum: [high, medium, low]
+    EvidenceItem:
+      type: object
+      additionalProperties: false
+      required: [evidenceId, claimId, sourceUrl, sourceTitle, stance, retrievedAt]
+      properties:
+        evidenceId:
+          $ref: "#/components/schemas/Identifier"
+        claimId:
+          $ref: "#/components/schemas/Identifier"
+        sourceUrl: {type: string, format: uri}
+        sourceTitle: {type: string, maxLength: 500}
+        publisher: {type: [string, "null"], maxLength: 300}
+        stance:
+          type: string
+          enum: [supports, contradicts, contextual, insufficient]
+        publishedAt: {type: [string, "null"], format: date-time}
+        retrievedAt: {type: string, format: date-time}
+        excerpt: {type: [string, "null"], maxLength: 1000}
+    TimelineEvent:
+      type: object
+      additionalProperties: false
+      required: [eventId, timelineType, dateType, occurredAt, description, sourceUrl]
+      properties:
+        eventId:
+          $ref: "#/components/schemas/Identifier"
+        timelineType:
+          type: string
+          enum: [claim_evidence, observed_media_history, video_content]
+        dateType:
+          type: string
+          enum: [published, modified, retrieved, claimed_event, exif_capture, fact_check_review, video_timestamp]
+        occurredAt: {type: string}
+        description: {type: string, maxLength: 1000}
+        sourceUrl: {type: [string, "null"], format: uri}
+        dateConfidence:
+          type: string
+          enum: [low, medium, high]
+    MediaSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        mediaId: {$ref: "#/components/schemas/Identifier"}
+        mediaType: {type: string, enum: [image, video]}
+        metadataStatus: {type: string, enum: [complete, partial, absent, unavailable]}
+        exactGpsSaved: {type: boolean}
+        c2paStatus: {type: string, enum: [trusted, valid_untrusted_signer, invalid, not_present, unsupported, not_checked]}
+        dateConsistency: {$ref: "#/components/schemas/ConsistencyStatus"}
+        locationConsistency: {$ref: "#/components/schemas/ConsistencyStatus"}
+        priorContextConsistency: {$ref: "#/components/schemas/ConsistencyStatus"}
+        earliestObservedMatchAt: {type: [string, "null"], format: date-time}
+        limitations:
+          type: array
+          items: {type: string, maxLength: 500}
+    Reflection:
+      type: object
+      additionalProperties: false
+      properties:
+        initialReflection: {type: [string, "null"], maxLength: 2000}
+        initialConfidence: {type: [integer, "null"], minimum: 0, maximum: 100}
+        updatedReflection: {type: [string, "null"], maxLength: 2000}
+        updatedConfidence: {type: [integer, "null"], minimum: 0, maximum: 100}
+    ReflectionUpdate:
+      type: object
+      additionalProperties: false
+      required: [updatedConfidence]
+      properties:
+        updatedReflection: {type: [string, "null"], maxLength: 2000}
+        updatedConfidence: {type: integer, minimum: 0, maximum: 100}
+    JournalEntrySummary:
+      type: object
+      additionalProperties: false
+      required: [entryId, inputType, status, createdAt, updatedAt]
+      properties:
+        entryId: {$ref: "#/components/schemas/Identifier"}
+        inputType: {type: string, enum: [text, article_url, social_post, image, youtube_video, video_upload, export]}
+        title: {type: [string, "null"], maxLength: 500}
+        status: {$ref: "#/components/schemas/OperationState"}
+        evidenceStatus: {oneOf: [{$ref: "#/components/schemas/EvidenceStatus"}, {type: "null"}]}
+        evidenceConfidence: {oneOf: [{$ref: "#/components/schemas/EvidenceConfidence"}, {type: "null"}]}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    JournalEntry:
+      type: object
+      additionalProperties: false
+      required: [contractVersion, entryId, inputType, status, createdAt, updatedAt, claims, evidence, timeline, reflection, limitations]
+      properties:
+        contractVersion: {const: "1.0"}
+        entryId: {$ref: "#/components/schemas/Identifier"}
+        inputType: {type: string, enum: [text, article_url, social_post, image, youtube_video, video_upload, export]}
+        title: {type: [string, "null"], maxLength: 500}
+        status: {$ref: "#/components/schemas/OperationState"}
+        evidenceStatus: {oneOf: [{$ref: "#/components/schemas/EvidenceStatus"}, {type: "null"}]}
+        evidenceConfidence: {oneOf: [{$ref: "#/components/schemas/EvidenceConfidence"}, {type: "null"}]}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+        canonicalUrl: {type: [string, "null"], format: uri}
+        factCheckProviderStatus: {oneOf: [{$ref: "#/components/schemas/FactCheckProviderStatus"}, {type: "null"}]}
+        assessmentExplanation: {type: [string, "null"], maxLength: 5000}
+        claims:
+          type: array
+          maxItems: 3
+          items: {$ref: "#/components/schemas/Claim"}
+        evidence:
+          type: array
+          items: {$ref: "#/components/schemas/EvidenceItem"}
+        timeline:
+          type: array
+          items: {$ref: "#/components/schemas/TimelineEvent"}
+        media:
+          type: array
+          items: {$ref: "#/components/schemas/MediaSummary"}
+        reflection: {$ref: "#/components/schemas/Reflection"}
+        limitations:
+          type: array
+          items: {type: string, maxLength: 500}
+    JournalEntryPage:
+      type: object
+      additionalProperties: false
+      required: [contractVersion, entries]
+      properties:
+        contractVersion: {const: "1.0"}
+        entries:
+          type: array
+          items: {$ref: "#/components/schemas/JournalEntrySummary"}
+        nextCursor: {type: [string, "null"]}
+    ChatRequest:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message: {type: string, minLength: 1, maxLength: 5000}
+    ApiError:
+      type: object
+      additionalProperties: false
+      required: [contractVersion, error]
+      properties:
+        contractVersion: {const: "1.0"}
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message, retryable, requestId]
+          properties:
+            code: {type: string}
+            message: {type: string, maxLength: 500}
+            retryable: {type: boolean}
+            requestId: {type: string}

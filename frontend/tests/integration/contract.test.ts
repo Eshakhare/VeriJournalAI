@@ -2,6 +2,9 @@ import { describe, it, expect } from 'vitest';
 import operationStates from '../../contracts/operation-states.json';
 import errorCodes from '../../contracts/error-codes.json';
 import featureFlags from '../../contracts/feature-flags.json';
+import operationStates from '../../../contracts/operation-states.json';
+import errorCodes from '../../../contracts/error-codes.json';
+import featureFlags from '../../../contracts/feature-flags.json';
 
 describe('Canonical Contract Specification Verification', () => {
   it('enforces contract version 1.0 across all contract artifacts', () => {

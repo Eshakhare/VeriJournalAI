@@ -1,6 +1,0 @@
-{
-  "name": "VeriJournal AI",
-  "description": "Personal news and multimodal integrity journal with evidence ledger, claim evolution timeline, and reflection tracking.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

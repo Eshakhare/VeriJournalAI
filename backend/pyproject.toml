@@ -1,0 +1,54 @@
+[project]
+name = "verijournal-backend"
+version = "1.0.0"
+description = "VeriJournal AI FastAPI backend with Google Cloud and Vertex AI integration"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.8.0",
+    "google-genai>=1.0.0",
+    "firebase-admin>=6.6.0",
+    "google-cloud-firestore>=2.20.0",
+    "google-cloud-storage>=2.19.0",
+    "google-cloud-tasks>=2.18.0",
+    "google-cloud-secret-manager>=2.22.0",
+    "google-cloud-vision>=3.9.0",
+    "google-auth>=2.38.0",
+    "httpx>=0.28.1",
+    "tldextract>=5.1.3",
+    "pillow>=11.1.0",
+    "exifread>=3.0.0",
+    "python-multipart>=0.0.20",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.25.0",
+    "respx>=0.22.0",
+    "ruff>=0.9.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
+

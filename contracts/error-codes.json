@@ -1,0 +1,25 @@
+{
+  "contractVersion": "1.0",
+  "errors": [
+    {"code": "AUTH_REQUIRED", "httpStatus": 401, "retryable": false},
+    {"code": "AUTH_INVALID", "httpStatus": 401, "retryable": false},
+    {"code": "ACCESS_DENIED", "httpStatus": 403, "retryable": false},
+    {"code": "APP_CHECK_REQUIRED", "httpStatus": 403, "retryable": false},
+    {"code": "FEATURE_DISABLED", "httpStatus": 503, "retryable": true},
+    {"code": "INVALID_INPUT", "httpStatus": 400, "retryable": false},
+    {"code": "UNSUPPORTED_INPUT", "httpStatus": 415, "retryable": false},
+    {"code": "PAYLOAD_TOO_LARGE", "httpStatus": 413, "retryable": false},
+    {"code": "RATE_LIMITED", "httpStatus": 429, "retryable": true},
+    {"code": "QUOTA_EXCEEDED", "httpStatus": 429, "retryable": true},
+    {"code": "URL_BLOCKED", "httpStatus": 422, "retryable": false},
+    {"code": "URL_UNAVAILABLE", "httpStatus": 422, "retryable": true},
+    {"code": "MEDIA_ACCESS_UNAVAILABLE", "httpStatus": 422, "retryable": false},
+    {"code": "OPERATION_NOT_FOUND", "httpStatus": 404, "retryable": false},
+    {"code": "OPERATION_NOT_RETRYABLE", "httpStatus": 409, "retryable": false},
+    {"code": "OPERATION_CANCELLED", "httpStatus": 409, "retryable": false},
+    {"code": "PROVIDER_UNAVAILABLE", "httpStatus": 503, "retryable": true},
+    {"code": "PROVIDER_INVALID_RESPONSE", "httpStatus": 502, "retryable": true},
+    {"code": "AI_SAFETY_BLOCK", "httpStatus": 422, "retryable": false},
+    {"code": "INTERNAL_ERROR", "httpStatus": 500, "retryable": true}
+  ]
+}

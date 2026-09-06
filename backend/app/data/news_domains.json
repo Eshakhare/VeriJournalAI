@@ -1,0 +1,112 @@
+{
+  "schemaVersion": "1.0",
+  "provenance": "VeriJournal Open Publisher Directory Seed",
+  "lastReviewedAt": "2026-03-01T00:00:00Z",
+  "publishers": [
+    {
+      "registrableDomain": "reuters.com",
+      "publisherName": "Reuters",
+      "publisherType": "wire_service",
+      "country": "GB",
+      "languages": ["en"],
+      "status": "recognized"
+    },
+    {
+      "registrableDomain": "apnews.com",
+      "publisherName": "Associated Press",
+      "publisherType": "wire_service",
+      "country": "US",
+      "languages": ["en"],
+      "status": "recognized"
+    },
+    {
+      "registrableDomain": "bbc.com",
+      "publisherName": "BBC",
+      "publisherType": "public_broadcaster",
+      "country": "GB",
+      "languages": ["en"],
+      "status": "recognized"
+    },
+    {
+      "registrableDomain": "bbc.co.uk",
+      "publisherName": "BBC UK",
+      "publisherType": "public_broadcaster",
+      "country": "GB",
+      "languages": ["en"],
+      "status": "recognized"
+    },
+    {
+      "registrableDomain": "theguardian.com",
+      "publisherName": "The Guardian",
+      "publisherType": "newspaper",
+      "country": "GB",
+      "languages": ["en"],
+      "status": "recognized"
+    },
+    {
+      "registrableDomain": "nytimes.com",
+      "publisherName": "The New York Times",
+      "publisherType": "newspaper",
+      "country": "US",
+      "languages": ["en"],
+      "status": "recognized"
+    },
+    {
+      "registrableDomain": "washingtonpost.com",
+      "publisherName": "The Washington Post",
+      "publisherType": "newspaper",
+      "country": "US",
+      "languages": ["en"],
+      "status": "recognized"
+    },
+    {
+      "registrableDomain": "wsj.com",
+      "publisherName": "The Wall Street Journal",
+      "publisherType": "newspaper",
+      "country": "US",
+      "languages": ["en"],
+      "status": "recognized"
+    },
+    {
+      "registrableDomain": "bloomberg.com",
+      "publisherName": "Bloomberg",
+      "publisherType": "financial_news",
+      "country": "US",
+      "languages": ["en"],
+      "status": "recognized"
+    },
+    {
+      "registrableDomain": "afp.com",
+      "publisherName": "Agence France-Presse",
+      "publisherType": "wire_service",
+      "country": "FR",
+      "languages": ["fr", "en"],
+      "status": "recognized"
+    },
+    {
+      "registrableDomain": "snopes.com",
+      "publisherName": "Snopes",
+      "publisherType": "fact_checker",
+      "country": "US",
+      "languages": ["en"],
+      "status": "recognized"
+    },
+    {
+      "registrableDomain": "politifact.com",
+      "publisherName": "PolitiFact",
+      "publisherType": "fact_checker",
+      "country": "US",
+      "languages": ["en"],
+      "status": "recognized"
+    },
+    {
+      "registrableDomain": "factcheck.org",
+      "publisherName": "FactCheck.org",
+      "publisherType": "fact_checker",
+      "country": "US",
+      "languages": ["en"],
+      "status": "recognized"
+    }
+  ]
+}
+

@@ -1,0 +1,12 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Production frontend does not write or read private media directly.
+    // All media reads, uploads, processing, and exports are mediated exclusively through
+    // the authorized FastAPI backend service account which enforces verified ownerUid path checks.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

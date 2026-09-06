@@ -119,9 +119,9 @@ npm run dev
 ### Environment Variables
 Configure the following deployment variables:
 ```bash
-export PROJECT_ID="gen-ai-training-461815"
+export PROJECT_ID="your-gcp-project-id"
 export REGION="us-central1"
-export SERVICE_NAME="verijournal-ai"
+export SERVICE_NAME="project-service-name"
 export RUNTIME_SA="verijournal-runner@${PROJECT_ID}.iam.gserviceaccount.com"
 export TASKS_INVOKER_SA="verijournal-task-invoker@${PROJECT_ID}.iam.gserviceaccount.com"
 export MEDIA_BUCKET="${PROJECT_ID}-verijournal-media"

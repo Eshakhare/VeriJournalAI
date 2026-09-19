@@ -3,6 +3,8 @@ import type { User } from 'firebase/auth';
 import {
   type AuthPrincipal,
   signInWithGoogle as fbSignInWithGoogle,
+  signInWithGoogleRedirect as fbSignInWithGoogleRedirect,
+  checkRedirectResult,
   signInDevMockUser,
   signOutUser as fbSignOutUser,
   getFreshIdToken,
@@ -15,6 +17,7 @@ interface AuthContextValue {
   loading: boolean;
   isMockUser: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithGoogleRedirect: () => Promise<void>;
   signInAsDevMock: (email?: string, name?: string) => void;
   signOut: () => Promise<void>;
   getToken: (forceRefresh?: boolean) => Promise<string | null>;
@@ -26,15 +29,9 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [principal, setPrincipal] = useState<AuthPrincipal | null>(() => {
-    // In dev mode, check if a dev session was set in memory or provide default
-    if (import.meta.env.DEV) {
-      return signInDevMockUser();
-    }
-    return null;
-  });
+  const [principal, setPrincipal] = useState<AuthPrincipal | null>(null);
   const [rawUser, setRawUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
 
   const handleAuthExpired = useCallback(() => {
@@ -54,6 +51,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [getToken, handleAuthExpired]);
 
   useEffect(() => {
+    // Check if returning from full page redirect sign-in
+    checkRedirectResult()
+      .then((res) => {
+        if (res) {
+          setPrincipal(res.principal);
+          setRawUser(res.rawUser);
+          setSessionExpired(false);
+        }
+      })
+      .catch((err) => {
+        console.warn('Redirect sign-in notice:', err);
+      });
+
     // Subscribe to Firebase client SDK auth state
     const unsubscribe = subscribeToAuthState((userPrincipal, firebaseUser) => {
       if (userPrincipal) {
@@ -61,8 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setRawUser(firebaseUser);
         setSessionExpired(false);
       } else {
-        // Only clear if not in dev mock user mode
-        setPrincipal((prev) => (prev?.isMock ? prev : null));
+        setPrincipal(null);
         setRawUser(null);
       }
       setLoading(false);
@@ -74,9 +83,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      const user = await fbSignInWithGoogle();
-      setPrincipal(user);
+      const res = await fbSignInWithGoogle();
+      setPrincipal(res.principal);
+      setRawUser(res.rawUser);
       setSessionExpired(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleRedirectSignIn = async () => {
+    setLoading(true);
+    try {
+      await fbSignInWithGoogleRedirect();
     } finally {
       setLoading(false);
     }
@@ -106,6 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loading,
       isMockUser: principal?.isMock ?? false,
       signInWithGoogle: handleGoogleSignIn,
+      signInWithGoogleRedirect: handleGoogleRedirectSignIn,
       signInAsDevMock: handleDevMockSignIn,
       signOut: handleSignOut,
       getToken,

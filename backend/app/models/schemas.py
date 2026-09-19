@@ -226,6 +226,10 @@ class ValidatedPartialResult(StrictModel):
     safeBrowsingStatus: Optional[Literal["known_threat", "no_known_threat", "unavailable"]] = None
     publisherRegistryMatch: Optional[Literal["recognized", "unknown", "possible_impersonation", "not_applicable"]] = None
     claims: List[Claim] = Field(default_factory=list, max_length=3)
+    extractedText: Optional[str] = None
+    evidenceStatus: Optional[EvidenceStatus] = None
+    mediaSummary: Optional[List[MediaSummary]] = None
+    timelineEventsCount: Optional[int] = None
     analysisCoverage: Dict[str, str] = Field(default_factory=dict)
 
 

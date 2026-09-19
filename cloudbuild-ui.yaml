@@ -1,0 +1,11 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - frontend/Dockerfile
+      - -t
+      - gcr.io/$PROJECT_ID/verijournal-ai-ui:$BUILD_ID
+      - .
+images:
+  - gcr.io/$PROJECT_ID/verijournal-ai-ui:$BUILD_ID

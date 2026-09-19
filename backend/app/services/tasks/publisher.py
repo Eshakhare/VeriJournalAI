@@ -14,6 +14,7 @@ try:
 except Exception as e:
     logger.info(f"Google Cloud Tasks client initialization skipped: {e}")
 
+_active_tasks = set()
 
 class CloudTasksPublisher:
     def __init__(self, client=None):
@@ -32,8 +33,9 @@ class CloudTasksPublisher:
         # Local development / test adapter
         if settings.use_local_tasks_adapter or not self.client:
             from app.services.tasks.worker import verification_worker
-            # Trigger asynchronous background run without blocking HTTP 202 response
-            asyncio.create_task(verification_worker.process_operation(operation_id))
+            task = asyncio.create_task(verification_worker.process_operation(operation_id))
+            _active_tasks.add(task)
+            task.add_done_callback(_active_tasks.discard)
             logger.info(f"Dispatched local task execution for operation {operation_id}")
             return f"local_task_{operation_id}"
 

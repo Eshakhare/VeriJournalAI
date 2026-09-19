@@ -8,7 +8,7 @@ interface SignInModalProps {
 }
 
 export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => {
-  const { signInWithGoogle, signInAsDevMock } = useAuth();
+  const { signInWithGoogle, signInWithGoogleRedirect, signInAsDevMock } = useAuth();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
 
@@ -23,7 +23,9 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => 
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string };
       if (error.code === 'auth/popup-closed-by-user') {
-        setErrorMsg('Sign-in popup closed before completion.');
+        setErrorMsg(
+          'Sign-in popup closed before completion. If your browser restricts popups or cookies, use "Sign in with Google (Full Page)" below.'
+        );
       } else if (
         error.code === 'auth/unauthorized-domain' ||
         error.code === 'auth/configuration-not-found'
@@ -35,6 +37,18 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => 
         setErrorMsg(error.message || 'Authentication failed. Please try again.');
       }
     } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleGoogleRedirectClick = async () => {
+    setIsSigningIn(true);
+    setErrorMsg(null);
+    try {
+      await signInWithGoogleRedirect();
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      setErrorMsg(error.message || 'Redirect authentication failed. Please try again.');
       setIsSigningIn(false);
     }
   };
@@ -86,14 +100,23 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => 
           </div>
         )}
 
-        <div className="mt-5 space-y-3">
+        <div className="mt-5 space-y-2.5">
           <button
             onClick={handleGoogleClick}
             disabled={isSigningIn}
-            className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 bg-[#0F172A] hover:bg-[#1E293B] text-white rounded-md text-xs font-bold transition shadow-sm disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 bg-[#0F172A] hover:bg-[#1E293B] text-white rounded-md text-xs font-bold transition shadow-sm disabled:opacity-50 cursor-pointer"
           >
             <LogIn className="w-4 h-4 text-[#38BDF8]" />
             <span>{isSigningIn ? 'Signing In...' : 'Sign in with Google Account'}</span>
+          </button>
+
+          <button
+            onClick={handleGoogleRedirectClick}
+            disabled={isSigningIn}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 rounded-md text-xs font-semibold transition disabled:opacity-50 cursor-pointer"
+            title="Use this if popup blockers or third-party cookie restrictions close the popup"
+          >
+            <span>Sign in with Google (Full Page Redirect)</span>
           </button>
 
           {import.meta.env.DEV && (

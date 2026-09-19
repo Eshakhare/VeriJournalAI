@@ -3,6 +3,8 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   type User,
@@ -51,38 +53,76 @@ export interface AuthPrincipal {
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
+export interface UserAuthResult {
+  principal: AuthPrincipal;
+  rawUser: User;
+}
+
 /**
  * Sign in using Google OAuth popup via Firebase Auth SDK
  */
-export async function signInWithGoogle(): Promise<AuthPrincipal> {
+export async function signInWithGoogle(): Promise<UserAuthResult> {
   if (!auth || !isFirebaseConfigured) {
-    // Return mock principal if real Firebase is not yet wired to a live GCP console project
-    return signInDevMockUser('auditor_demo@verijournal.dev', 'Lead Evidence Auditor');
+    const mock = signInDevMockUser('auditor_demo@verijournal.dev', 'Lead Evidence Auditor');
+    return { principal: mock, rawUser: null as unknown as User };
   }
 
   try {
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
     return {
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName || 'Authenticated Researcher',
-      photoURL: user.photoURL,
-      isAnonymous: user.isAnonymous,
-      isMock: false,
+      principal: {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName || 'Authenticated Researcher',
+        photoURL: user.photoURL,
+        isAnonymous: user.isAnonymous,
+        isMock: false,
+      },
+      rawUser: user,
     };
   } catch (err: unknown) {
-    const error = err as { code?: string; message?: string };
-    // If popup blocked or unauthorized domain in dev preview, offer graceful dev login
-    if (
-      error.code === 'auth/unauthorized-domain' ||
-      error.code === 'auth/configuration-not-found' ||
-      error.code === 'auth/invalid-api-key' ||
-      error.code === 'auth/popup-closed-by-user'
-    ) {
-      console.info('Firebase Google Auth encountered environment constraint:', error.code);
-      throw err;
+    console.error('Firebase signInWithPopup error:', err);
+    throw err;
+  }
+}
+
+/**
+ * Sign in using Google OAuth full page redirect (best fallback when browser popups or third-party cookies are blocked)
+ */
+export async function signInWithGoogleRedirect(): Promise<void> {
+  if (!auth || !isFirebaseConfigured) {
+    return;
+  }
+  await signInWithRedirect(auth, googleProvider);
+}
+
+/**
+ * Check if the page was loaded from a redirect sign-in flow
+ */
+export async function checkRedirectResult(): Promise<UserAuthResult | null> {
+  if (!auth || !isFirebaseConfigured) {
+    return null;
+  }
+  try {
+    const result = await getRedirectResult(auth);
+    if (result && result.user) {
+      const user = result.user;
+      return {
+        principal: {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || 'Authenticated Researcher',
+          photoURL: user.photoURL,
+          isAnonymous: user.isAnonymous,
+          isMock: false,
+        },
+        rawUser: user,
+      };
     }
+    return null;
+  } catch (err) {
+    console.error('Firebase getRedirectResult error:', err);
     throw err;
   }
 }

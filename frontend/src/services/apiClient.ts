@@ -16,11 +16,10 @@ import type {
 import { mockAdapter } from './mockAdapter';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
-const USE_DEV_MOCK =
-  import.meta.env.DEV &&
-  (import.meta.env.VITE_USE_DEV_MOCK === 'true' ||
-    !import.meta.env.VITE_FIREBASE_API_KEY ||
-    import.meta.env.VITE_FIREBASE_API_KEY.includes('placeholder'));
+const USE_DEV_MOCK = (import.meta.env.DEV &&
+    (import.meta.env.VITE_USE_MOCK_API === 'true' ||
+      !import.meta.env.VITE_FIREBASE_API_KEY ||
+      import.meta.env.VITE_FIREBASE_API_KEY.includes('placeholder')));
 
 /**
  * Generate a cryptographically strong Idempotency-Key (min 16, max 128 chars)
@@ -393,15 +392,20 @@ export class VeriJournalApiClient {
         if (line.startsWith('data: ')) {
           const rawData = line.slice(6).trim();
           if (rawData === '[DONE]') return;
+          let parsed: any;
           try {
-            const parsed = JSON.parse(rawData);
-            if (typeof parsed === 'string') {
-              yield parsed;
-            } else if (parsed.text) {
-              yield parsed.text;
-            }
+            parsed = JSON.parse(rawData);
           } catch {
             yield rawData;
+            continue;
+          }
+
+          if (typeof parsed === 'string') {
+            yield parsed;
+          } else if (parsed.error) {
+            throw new Error(parsed.error);
+          } else if (parsed.text) {
+            yield parsed.text;
           }
         }
       }

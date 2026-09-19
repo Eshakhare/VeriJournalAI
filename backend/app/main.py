@@ -60,6 +60,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
+    allow_origin_regex=r"^https://verijournal-ai-ui-[a-zA-Z0-9\-.]+\.run\.app$",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -81,8 +82,27 @@ app.include_router(export_router, prefix=api_v1_prefix)
 app.include_router(worker_router, prefix=api_v1_prefix)
 
 # 4. Optional Frontend Static Files for single-container deployment
-dist_dir = Path(__file__).resolve().parent.parent.parent / "dist"
+dist_dir = Path(__file__).resolve().parent.parent / "static"
 if dist_dir.exists() and (dist_dir / "index.html").exists():
-    app.mount("/", StaticFiles(directory=str(dist_dir), html=True), name="static")
+    # Mount static assets (js, css, images) directly
+    app.mount("/assets", StaticFiles(directory=str(dist_dir / "assets")), name="assets")
+    
+    # Catch-all route to serve index.html for React Router
+    from fastapi.responses import FileResponse
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        # Ignore API routes - let them 404 naturally
+        if full_path.startswith("api/"):
+            return JSONResponse(status_code=404, content={"message": "API route not found"})
+            
+        file_path = dist_dir / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        
+        response = FileResponse(dist_dir / "index.html")
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
     logger.info(f"Mounted production frontend static assets from {dist_dir}")
 

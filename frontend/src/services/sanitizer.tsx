@@ -79,7 +79,7 @@ function parseSafeMarkdown(rawText: string): React.ReactNode[] {
     // Headings
     if (line.startsWith('### ')) {
       nodes.push(
-        <h4 key={`h3-${i}`} className="text-base font-semibold text-neutral-900 mt-3 mb-1">
+        <h4 key={`h3-${i}`} className="text-base font-semibold text-inherit mt-3 mb-1">
           {renderInline(line.slice(4))}
         </h4>
       );
@@ -87,7 +87,7 @@ function parseSafeMarkdown(rawText: string): React.ReactNode[] {
     }
     if (line.startsWith('## ')) {
       nodes.push(
-        <h3 key={`h2-${i}`} className="text-lg font-semibold text-neutral-900 mt-4 mb-2">
+        <h3 key={`h2-${i}`} className="text-lg font-semibold text-inherit mt-4 mb-2">
           {renderInline(line.slice(3))}
         </h3>
       );
@@ -95,7 +95,7 @@ function parseSafeMarkdown(rawText: string): React.ReactNode[] {
     }
     if (line.startsWith('# ')) {
       nodes.push(
-        <h2 key={`h1-${i}`} className="text-xl font-bold text-neutral-900 mt-4 mb-2">
+        <h2 key={`h1-${i}`} className="text-xl font-bold text-inherit mt-4 mb-2">
           {renderInline(line.slice(2))}
         </h2>
       );
@@ -107,7 +107,7 @@ function parseSafeMarkdown(rawText: string): React.ReactNode[] {
       nodes.push(
         <blockquote
           key={`quote-${i}`}
-          className="border-l-4 border-amber-400 bg-amber-50/50 pl-3 py-1 my-2 text-neutral-700 italic text-sm"
+          className="border-l-4 border-amber-400 bg-amber-50/10 pl-3 py-1 my-2 text-inherit italic text-sm opacity-90"
         >
           {renderInline(line.slice(2))}
         </blockquote>
@@ -118,7 +118,7 @@ function parseSafeMarkdown(rawText: string): React.ReactNode[] {
     // Bullet points
     if (/^[*-]\s+/.test(line)) {
       nodes.push(
-        <li key={`li-${i}`} className="ml-5 list-disc text-sm text-neutral-800 my-0.5">
+        <li key={`li-${i}`} className="ml-5 list-disc text-sm text-inherit my-0.5">
           {renderInline(line.replace(/^[*-]\s+/, ''))}
         </li>
       );
@@ -132,7 +132,7 @@ function parseSafeMarkdown(rawText: string): React.ReactNode[] {
 
     // Regular paragraph
     nodes.push(
-      <p key={`p-${i}`} className="my-1.5 text-sm leading-relaxed text-neutral-800">
+      <p key={`p-${i}`} className="my-1.5 text-sm leading-relaxed text-inherit">
         {renderInline(line)}
       </p>
     );
@@ -152,14 +152,14 @@ function renderInline(text: string): React.ReactNode {
   return parts.map((part, index) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return (
-        <strong key={index} className="font-semibold text-neutral-950">
+        <strong key={index} className="font-semibold text-inherit">
           {part.slice(2, -2)}
         </strong>
       );
     }
     if (part.startsWith('*') && part.endsWith('*')) {
       return (
-        <em key={index} className="italic text-neutral-800">
+        <em key={index} className="italic text-inherit opacity-90">
           {part.slice(1, -1)}
         </em>
       );

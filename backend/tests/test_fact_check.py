@@ -13,7 +13,8 @@ async def test_fact_check_disabled_status():
 
 @pytest.mark.asyncio
 async def test_fact_check_unavailable_without_key():
-    client = FactCheckClient(api_key=None, enabled=True)
+    client = FactCheckClient(api_key="", enabled=True)
+    client.api_key = None
     res = await client.search_claims("test claim")
     assert res.status == "unavailable"
     assert len(res.items) == 0

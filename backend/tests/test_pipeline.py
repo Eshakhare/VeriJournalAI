@@ -4,7 +4,28 @@ from app.services.tasks.worker import verification_worker
 
 
 @pytest.mark.asyncio
-async def test_full_text_verification_pipeline(client, auth_headers_user1):
+async def test_full_text_verification_pipeline(client, auth_headers_user1, monkeypatch):
+    from app.core.config import settings
+    from app.services.tasks.publisher import tasks_publisher
+
+    # Prevent concurrent background execution so worker run is controlled directly in test
+    monkeypatch.setattr(settings, "use_local_tasks_adapter", False)
+
+    class MockTasksClient:
+        request = None
+
+        def queue_path(self, *args):
+            return "projects/test/locations/us-central1/queues/test-queue"
+
+        def create_task(self, request):
+            self.request = request
+            class TaskResp:
+                name = "mock_task_001"
+            return TaskResp()
+
+    mock_tasks_client = MockTasksClient()
+    monkeypatch.setattr(tasks_publisher, "client", mock_tasks_client)
+
     # 1. Submit verification
     res = await client.post(
         "/api/v1/verifications/text",
@@ -18,6 +39,8 @@ async def test_full_text_verification_pipeline(client, auth_headers_user1):
     assert res.status_code == 202
     data = res.json()
     op_id = data["operationId"]
+    task_request = mock_tasks_client.request["task"]
+    assert "/api/v1/" in task_request["http_request"]["url"]
 
     # 2. Worker processes operation through all 9 stages
     await verification_worker.process_operation(op_id, worker_id="test_worker")

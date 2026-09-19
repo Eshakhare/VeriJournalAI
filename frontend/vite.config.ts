@@ -5,6 +5,8 @@ import { defineConfig } from 'vite';
 
 export default defineConfig(() => {
   return {
+    // Load env vars from repo root so frontend and backend share one .env
+    // envDir: path.resolve(__dirname, '..'),
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
@@ -14,6 +16,9 @@ export default defineConfig(() => {
     server: {
       port: 3000,
       host: '0.0.0.0',
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+      },
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },

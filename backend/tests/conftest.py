@@ -2,6 +2,7 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
 
+from app.core.config import settings
 from app.main import app
 from app.repositories.firestore import firestore_repo
 from app.repositories.storage import storage_repo
@@ -9,7 +10,8 @@ from app.repositories.storage import storage_repo
 
 @pytest.fixture(autouse=True)
 def reset_stores():
-    """Resets mock databases before each test."""
+    """Resets mock databases and enables dev mode harness before each test."""
+    settings.dev_mode = True
     firestore_repo.mock.reset()
     storage_repo.mock.reset()
 

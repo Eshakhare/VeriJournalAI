@@ -8,7 +8,7 @@ from app.core.errors import VeriJournalException
 from app.core.logging import logger
 from app.services.tasks.worker import verification_worker
 
-router = APIRouter(prefix="/internal/tasks", tags=["Internal Worker"])
+router = APIRouter(tags=["Internal Worker"])
 
 
 class TaskPayload(BaseModel):
@@ -16,7 +16,8 @@ class TaskPayload(BaseModel):
     operationId: str
 
 
-@router.post("/worker", status_code=status.HTTP_200_OK)
+@router.post("/internal/tasks/worker", status_code=status.HTTP_200_OK)
+@router.post("/worker/process", status_code=status.HTTP_200_OK)
 async def execute_task_worker(
     payload: TaskPayload,
     principal: TaskWorkerPrincipal = Depends(get_task_worker_principal),

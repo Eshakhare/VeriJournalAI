@@ -7,14 +7,15 @@ from app.core.config import settings
 from app.core.errors import VeriJournalException
 from app.core.logging import logger
 
-# Try importing Firestore client
-_firestore_client = None
-try:
-    from google.cloud import firestore
-    if not settings.dev_mode:
-        _firestore_client = firestore.AsyncClient(project=settings.google_cloud_project)
-except Exception as e:
-    logger.info(f"Firestore async client unavailable, using in-memory store: {e}")
+def _get_async_firestore_client():
+    if settings.dev_mode:
+        return None
+    try:
+        from google.cloud import firestore
+        return firestore.AsyncClient(project=settings.google_cloud_project)
+    except Exception as e:
+        logger.info(f"Firestore async client unavailable, using in-memory store: {e}")
+        return None
 
 
 def _now_iso() -> str:
@@ -52,8 +53,20 @@ _mock_store = InMemoryFirestoreStore()
 
 class FirestoreRepository:
     def __init__(self, client=None):
-        self.client = client or _firestore_client
+        self._explicit_client = client
         self.mock = _mock_store
+
+    @property
+    def client(self):
+        if settings.dev_mode:
+            return None
+        if self._explicit_client is not None:
+            return self._explicit_client
+        return _get_async_firestore_client()
+
+    @client.setter
+    def client(self, val):
+        self._explicit_client = val
 
     def _idemp_key(self, uid: str, route: str, fingerprint: str, idemp_header: str) -> str:
         raw = f"{uid}:{route}:{fingerprint}:{idemp_header}".encode("utf-8")
@@ -226,6 +239,7 @@ class FirestoreRepository:
         cursor: Optional[str] = None,
     ) -> Tuple[List[dict], Optional[str]]:
         if self.client:
+            from google.cloud import firestore
             col_ref = (
                 self.client.collection("users")
                 .document(uid)
@@ -410,6 +424,7 @@ class FirestoreRepository:
     async def get_chat_history(self, uid: str, entry_id: str, limit: int = 20) -> List[dict]:
         k = f"{uid}:{entry_id}"
         if self.client:
+            from google.cloud import firestore
             col_ref = (
                 self.client.collection("users")
                 .document(uid)

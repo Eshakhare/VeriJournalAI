@@ -69,10 +69,9 @@ class Settings(BaseSettings):
 
     # Vertex AI / Gemini Models
     gemini_model_primary: str = Field(default="gemini-2.5-flash", alias="GEMINI_MODEL_PRIMARY")
-    gemini_model_fallback: str = Field(default="gemini-2.5-pro", alias="GEMINI_MODEL_FALLBACK")
+    gemini_model_fallback: str = Field(default="gemini-2.5-flash", alias="GEMINI_MODEL_FALLBACK")
     gemini_api_key: Optional[str] = Field(default=None, alias="GEMINI_API_KEY")
     use_vertex_ai: bool = Field(default=True, alias="USE_VERTEX_AI")
-
     # Third-Party / Google APIs
     google_safe_browsing_api_key: Optional[str] = Field(default=None, alias="GOOGLE_SAFE_BROWSING_API_KEY")
     google_factcheck_api_key: Optional[str] = Field(default=None, alias="GOOGLE_FACTCHECK_API_KEY")
@@ -83,16 +82,17 @@ class Settings(BaseSettings):
     media_bucket: Optional[str] = Field(default=None, alias="MEDIA_BUCKET")
 
     # Cloud Tasks
-    cloud_tasks_queue: str = Field(default="verijournal-verification-queue", alias="CLOUD_TASKS_QUEUE")
+    cloud_tasks_queue: str = Field(default="verijournal-ai-verification", alias="CLOUD_TASKS_QUEUE")
     cloud_tasks_location: str = Field(default="us-central1", alias="CLOUD_TASKS_LOCATION")
     task_worker_url: str = Field(default="http://localhost:8000/api/v1/internal/tasks/worker", alias="TASK_WORKER_URL")
     task_worker_audience: str = Field(default="https://verijournal-worker", alias="TASK_WORKER_AUDIENCE")
-    task_invoker_service_account: str = Field(default="cloud-tasks-invoker@gen-ai-training-461815.iam.gserviceaccount.com", alias="TASK_INVOKER_SERVICE_ACCOUNT")
+    task_invoker_service_account: str = Field(default="verijournal-ai-task-invoker@gen-ai-training-461815.iam.gserviceaccount.com", alias="TASK_INVOKER_SERVICE_ACCOUNT")
     use_local_tasks_adapter: bool = Field(default=True, alias="USE_LOCAL_TASKS_ADAPTER")
 
     # Request, Upload, and Output Limits
     max_request_bytes: int = Field(default=10 * 1024 * 1024, alias="MAX_REQUEST_BYTES")  # 10 MB
     max_output_tokens: int = Field(default=2048, alias="MAX_OUTPUT_TOKENS")
+    chat_stream_timeout_seconds: int = Field(default=45, alias="CHAT_STREAM_TIMEOUT_SECONDS")
     max_image_bytes: int = Field(default=10 * 1024 * 1024, alias="MAX_IMAGE_BYTES")  # 10 MB
     max_image_pixels: int = Field(default=16 * 1024 * 1024, alias="MAX_IMAGE_PIXELS")  # 16 MP
     max_video_bytes: int = Field(default=50 * 1024 * 1024, alias="MAX_VIDEO_BYTES")  # 50 MB
@@ -117,7 +117,13 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> List[str]:
-        return [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
+        origins = [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
+        if self.google_cloud_project:
+            origins.extend([
+                f"https://{self.google_cloud_project}.web.app",
+                f"https://{self.google_cloud_project}.firebaseapp.com"
+            ])
+        return list(set(origins))
 
 
 settings = Settings()

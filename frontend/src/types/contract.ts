@@ -203,6 +203,10 @@ export interface ValidatedPartialResult {
     | 'not_applicable'
     | null;
   claims?: Claim[];
+  extractedText?: string;
+  evidenceStatus?: string;
+  mediaSummary?: MediaSummary[];
+  timelineEventsCount?: number;
   analysisCoverage?: Record<
     string,
     'complete' | 'partial' | 'unavailable' | 'not_applicable' | 'not_completed'

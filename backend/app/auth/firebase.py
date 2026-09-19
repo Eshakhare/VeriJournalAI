@@ -12,8 +12,10 @@ from app.core.logging import logger
 # Initialize Firebase Admin app if not already initialized
 if not firebase_admin._apps:
     try:
-        firebase_admin.initialize_app()
-        logger.info("Initialized default Firebase Admin application.")
+        firebase_admin.initialize_app(options={
+            'projectId': settings.google_cloud_project
+        })
+        logger.info(f"Initialized default Firebase Admin application for project {settings.google_cloud_project}.")
     except Exception as e:
         logger.warning(f"Firebase Admin default initialization skipped: {e}")
 
@@ -50,16 +52,10 @@ async def get_current_user(
         return UserPrincipal(uid=uid, email=f"{uid}@test.local", claims={})
 
     try:
-        # Verify signature, expiry, and revocation via Firebase Admin SDK
-        decoded = firebase_auth.verify_id_token(token, check_revoked=True)
-        uid = decoded.get("uid")
-        if not uid:
-            raise VeriJournalException(
-                code="AUTH_INVALID",
-                message="Firebase token missing subject UID.",
-            )
+        decoded = firebase_auth.verify_id_token(token)
+
         return UserPrincipal(
-            uid=uid,
+            uid=decoded["uid"],
             email=decoded.get("email"),
             claims=decoded,
         )

@@ -38,7 +38,7 @@ export const OperationWatcher: React.FC<OperationWatcherProps> = ({
   onComplete,
   onCancel,
 }) => {
-  const { apiClient } = useAuth();
+  const { apiClient, loading } = useAuth();
 
   const [operation, setOperation] = useState<OperationStatus | null>(null);
   const [etag, setEtag] = useState<string | undefined>(undefined);
@@ -63,6 +63,11 @@ export const OperationWatcher: React.FC<OperationWatcherProps> = ({
 
   // Poll loop
   const pollOperation = useCallback(async () => {
+    if (loading) {
+      timeoutIdRef.current = setTimeout(pollOperation, 1000);
+      return;
+    }
+    
     try {
       // If document tab is hidden, substantially slow down polling to 8 seconds
       const pollDelayMs = isTabVisibleRef.current ? 2000 : 8000;
@@ -155,12 +160,15 @@ export const OperationWatcher: React.FC<OperationWatcherProps> = ({
       window.location.hash = `#op=${accepted.operationId}`;
       setIsPolling(true);
       setPollError(null);
+      pollOperation(); // Explicitly restart the polling loop
     } catch (err) {
       console.error('Retry request failed:', err);
     } finally {
       setIsRetrying(false);
     }
   };
+
+  const [selectedStage, setSelectedStage] = useState<OperationStage | null>(null);
 
   const status = operation?.status || 'queued';
   const progressPercent = operation?.progressPercent ?? 10;
@@ -298,11 +306,21 @@ export const OperationWatcher: React.FC<OperationWatcherProps> = ({
             {ORDERED_STAGES.map((stage) => {
               const isCompleted = completedStages.includes(stage.key) || status === 'complete';
               const isActive = currentStage === stage.key && !isCompleted && !isTerminal;
+              const isSelected = selectedStage === stage.key;
 
               return (
                 <div
                   key={stage.key}
+                  onClick={() => {
+                    if (isCompleted || isActive) {
+                      setSelectedStage(isSelected ? null : stage.key);
+                    }
+                  }}
                   className={`p-3 rounded-xl border flex items-center justify-between transition ${
+                    (isCompleted || isActive) ? 'cursor-pointer hover:shadow-sm' : ''
+                  } ${
+                    isSelected ? 'ring-2 ring-sky-400 border-transparent' : ''
+                  } ${
                     isCompleted
                       ? 'bg-emerald-50/40 border-emerald-200/80 text-emerald-950'
                       : isActive
@@ -350,53 +368,76 @@ export const OperationWatcher: React.FC<OperationWatcherProps> = ({
           <div className="border border-neutral-200 rounded-xl p-4 bg-neutral-50/60 h-full">
             <h3 className="text-xs font-bold text-neutral-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <Shield className="w-3.5 h-3.5 text-neutral-500" />
-              <span>Validated Partial Signals</span>
+              <span>{selectedStage ? ORDERED_STAGES.find(s => s.key === selectedStage)?.label : 'Validated Partial Signals'}</span>
             </h3>
             <p className="text-[11px] text-neutral-500 mb-3 leading-relaxed">
-              Displays verified server outputs emitted by stages prior to final synthesis.
+              {selectedStage ? 'Results obtained from this verification stage.' : 'Click on a completed stage to view its outputs.'}
             </p>
 
-            {partialResult ? (
+            {partialResult && selectedStage ? (
               <div className="space-y-3">
-                {partialResult.safeBrowsingStatus && (
-                  <div className="p-2.5 rounded-lg bg-white border border-neutral-200 text-xs">
-                    <span className="text-[10px] font-mono text-neutral-500 uppercase block">
-                      Google Safe Browsing
-                    </span>
-                    <span className="font-semibold text-neutral-900 capitalize">
-                      {partialResult.safeBrowsingStatus.replace(/_/g, ' ')}
-                    </span>
-                  </div>
+                {selectedStage === 'extracting_content' && partialResult.extractedText && (
+                   <div className="p-2.5 rounded-lg bg-white border border-neutral-200 text-xs max-h-60 overflow-y-auto whitespace-pre-wrap text-neutral-700">
+                     {partialResult.extractedText}
+                   </div>
                 )}
-
-                {partialResult.publisherRegistryMatch && (
-                  <div className="p-2.5 rounded-lg bg-white border border-neutral-200 text-xs">
-                    <span className="text-[10px] font-mono text-neutral-500 uppercase block">
-                      Publisher Classification
-                    </span>
-                    <span className="font-semibold text-neutral-900 capitalize">
-                      {partialResult.publisherRegistryMatch.replace(/_/g, ' ')}
-                    </span>
-                  </div>
+                {selectedStage === 'checking_url' && (
+                  <>
+                    {partialResult.safeBrowsingStatus && (
+                      <div className="p-2.5 rounded-lg bg-white border border-neutral-200 text-xs">
+                        <span className="text-[10px] font-mono text-neutral-500 uppercase block">Google Safe Browsing</span>
+                        <span className="font-semibold text-neutral-900 capitalize">{partialResult.safeBrowsingStatus.replace(/_/g, ' ')}</span>
+                      </div>
+                    )}
+                    {partialResult.publisherRegistryMatch && (
+                      <div className="p-2.5 rounded-lg bg-white border border-neutral-200 text-xs">
+                        <span className="text-[10px] font-mono text-neutral-500 uppercase block">Publisher Classification</span>
+                        <span className="font-semibold text-neutral-900 capitalize">{partialResult.publisherRegistryMatch.replace(/_/g, ' ')}</span>
+                      </div>
+                    )}
+                  </>
                 )}
-
-                {partialResult.claims && partialResult.claims.length > 0 && (
+                {selectedStage === 'extracting_claims' && partialResult.claims && (
                   <div className="p-2.5 rounded-lg bg-white border border-neutral-200 text-xs space-y-1.5">
-                    <span className="text-[10px] font-mono text-neutral-500 uppercase block">
-                      Extracted Propositions ({partialResult.claims.length})
-                    </span>
+                    <span className="text-[10px] font-mono text-neutral-500 uppercase block">Extracted Propositions ({partialResult.claims.length})</span>
                     {partialResult.claims.map((c) => (
-                      <p key={c.claimId} className="text-neutral-800 text-[11px] italic leading-tight">
-                        &ldquo;{c.claimText}&rdquo;
-                      </p>
+                      <p key={c.claimId} className="text-neutral-800 text-[11px] italic leading-tight">&ldquo;{c.claimText}&rdquo;</p>
                     ))}
                   </div>
+                )}
+                {selectedStage === 'retrieving_evidence' && partialResult.evidenceStatus && (
+                   <div className="p-2.5 rounded-lg bg-white border border-neutral-200 text-xs">
+                      <span className="text-[10px] font-mono text-neutral-500 uppercase block">Synthesized Evidence Status</span>
+                      <span className="font-semibold text-neutral-900 capitalize">{partialResult.evidenceStatus.replace(/_/g, ' ')}</span>
+                   </div>
+                )}
+                {selectedStage === 'analyzing_media' && partialResult.mediaSummary && (
+                   <div className="p-2.5 rounded-lg bg-white border border-neutral-200 text-xs space-y-2">
+                      <span className="text-[10px] font-mono text-neutral-500 uppercase block">Media Analysis ({partialResult.mediaSummary.length})</span>
+                      {partialResult.mediaSummary.map((m, idx) => (
+                        <div key={idx} className="border-t pt-2 first:border-t-0 first:pt-0">
+                          <p><strong>Metadata:</strong> {m.metadataStatus}</p>
+                          <p><strong>Date Consistency:</strong> {m.dateConsistency}</p>
+                          <p><strong>Location Consistency:</strong> {m.locationConsistency}</p>
+                        </div>
+                      ))}
+                   </div>
+                )}
+                {selectedStage === 'building_timeline' && partialResult.timelineEventsCount !== undefined && (
+                   <div className="p-2.5 rounded-lg bg-white border border-neutral-200 text-xs">
+                      <span className="text-[10px] font-mono text-neutral-500 uppercase block">Timeline Events Assembled</span>
+                      <span className="font-semibold text-neutral-900 text-lg">{partialResult.timelineEventsCount}</span>
+                   </div>
+                )}
+                {/* Fallback if no specific data mapped for selected stage */}
+                {!['extracting_content', 'checking_url', 'extracting_claims', 'retrieving_evidence', 'analyzing_media', 'building_timeline'].includes(selectedStage) && (
+                   <div className="p-4 text-center text-xs text-neutral-400 italic">No specific partial data to display for this stage.</div>
                 )}
               </div>
             ) : (
               <div className="p-6 text-center text-xs text-neutral-400">
                 <Sparkles className="w-5 h-5 mx-auto mb-2 text-neutral-300" />
-                <span>Awaiting validated stage output...</span>
+                <span>{selectedStage ? 'Data not available yet.' : 'Awaiting validated stage output...'}</span>
               </div>
             )}
           </div>

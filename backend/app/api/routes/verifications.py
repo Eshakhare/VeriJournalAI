@@ -4,7 +4,7 @@ import hashlib
 from typing import Optional
 import uuid
 
-from fastapi import APIRouter, Depends, File, Form, Header, Response, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Header, Response, UploadFile, status
 from fastapi.responses import JSONResponse
 
 from app.auth.firebase import UserPrincipal, get_current_user
@@ -56,6 +56,7 @@ def _accepted_response(operation_id: str) -> JSONResponse:
 @router.post("/text", response_model=OperationAccepted, status_code=status.HTTP_202_ACCEPTED)
 async def submit_text_verification(
     request_data: TextVerificationRequest,
+    background_tasks: BackgroundTasks,
     idempotency_key: str = Header(..., alias="Idempotency-Key"),
     user: UserPrincipal = Depends(get_current_user),
 ):
@@ -92,7 +93,7 @@ async def submit_text_verification(
             "updatedAt": _now_iso(),
         }
         await firestore_repo.create_operation(op_record)
-        await tasks_publisher.enqueue_operation_task(op_id)
+        background_tasks.add_task(tasks_publisher.enqueue_operation_task, op_id)
 
     return _accepted_response(op_id)
 
@@ -100,6 +101,7 @@ async def submit_text_verification(
 @router.post("/url", response_model=OperationAccepted, status_code=status.HTTP_202_ACCEPTED)
 async def submit_url_verification(
     request_data: UrlVerificationRequest,
+    background_tasks: BackgroundTasks,
     idempotency_key: str = Header(..., alias="Idempotency-Key"),
     user: UserPrincipal = Depends(get_current_user),
 ):
@@ -136,7 +138,7 @@ async def submit_url_verification(
             "updatedAt": _now_iso(),
         }
         await firestore_repo.create_operation(op_record)
-        await tasks_publisher.enqueue_operation_task(op_id)
+        background_tasks.add_task(tasks_publisher.enqueue_operation_task, op_id)
 
     return _accepted_response(op_id)
 
@@ -144,6 +146,7 @@ async def submit_url_verification(
 @router.post("/social", response_model=OperationAccepted, status_code=status.HTTP_202_ACCEPTED)
 async def submit_social_verification(
     request_data: SocialVerificationRequest,
+    background_tasks: BackgroundTasks,
     idempotency_key: str = Header(..., alias="Idempotency-Key"),
     user: UserPrincipal = Depends(get_current_user),
 ):
@@ -182,13 +185,14 @@ async def submit_social_verification(
             "updatedAt": _now_iso(),
         }
         await firestore_repo.create_operation(op_record)
-        await tasks_publisher.enqueue_operation_task(op_id)
+        background_tasks.add_task(tasks_publisher.enqueue_operation_task, op_id)
 
     return _accepted_response(op_id)
 
 
 @router.post("/media", response_model=OperationAccepted, status_code=status.HTTP_202_ACCEPTED)
 async def submit_media_verification(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     accompanyingClaim: Optional[str] = Form(None),
     initialReflection: Optional[str] = Form(None),
@@ -250,7 +254,7 @@ async def submit_media_verification(
             "updatedAt": _now_iso(),
         }
         await firestore_repo.create_operation(op_record)
-        await tasks_publisher.enqueue_operation_task(op_id)
+        background_tasks.add_task(tasks_publisher.enqueue_operation_task, op_id)
 
     return _accepted_response(op_id)
 

@@ -11,6 +11,7 @@ from app.core.logging import logger
 from app.models.schemas import (
     CheckWorthiness,
     Claim,
+    ConsistencyStatus,
     EvidenceConfidence,
     EvidenceItem,
     EvidenceStance,
@@ -21,6 +22,7 @@ from app.services.ai.prompts import (
     CLAIM_EXTRACTION_SYSTEM_PROMPT,
     ENTRY_CHAT_SYSTEM_PROMPT,
     EVIDENCE_SYNTHESIS_SYSTEM_PROMPT,
+    MEDIA_CONSISTENCY_SYSTEM_PROMPT,
 )
 
 # Try initializing google-genai client
@@ -32,7 +34,7 @@ try:
     if settings.gemini_api_key:
         _genai_client = genai.Client(api_key=settings.gemini_api_key)
         logger.info("Initialized Gemini Client with API key.")
-    elif settings.use_vertex_ai and not settings.dev_mode:
+    elif settings.use_vertex_ai and (not settings.dev_mode):
         _genai_client = genai.Client(
             vertexai=True,
             project=settings.google_cloud_project,
@@ -62,6 +64,18 @@ class GeminiGateway:
                 return await fn()
             except Exception as e:
                 err_str = str(e).lower()
+                if any(
+                    phrase in err_str
+                    for phrase in [
+                        "prepayment credits are depleted",
+                        "billing",
+                        "payment required",
+                    ]
+                ):
+                    raise VeriJournalException(
+                        code="PROVIDER_UNAVAILABLE",
+                        message="Gemini API billing credits are exhausted. Add Gemini API billing credits or switch to Vertex AI for local execution.",
+                    )
                 is_retryable = any(code in err_str for code in ["429", "500", "503", "resource_exhausted", "unavailable"])
                 if not is_retryable:
                     if "safety" in err_str or "blocked" in err_str:
@@ -104,11 +118,24 @@ class GeminiGateway:
 
         async def _invoke():
             from google.genai import types
+            from pydantic import BaseModel
+            
+            class ExtractedClaim(BaseModel):
+                claimText: str
+                speaker: Optional[str] = None
+                claimDate: Optional[str] = None
+                locations: List[str] = []
+                entities: List[str] = []
+                checkWorthiness: str
+
+            class ExtractionResponse(BaseModel):
+                claims: List[ExtractedClaim]
+
             config = types.GenerateContentConfig(
                 system_instruction=CLAIM_EXTRACTION_SYSTEM_PROMPT,
                 temperature=0.1,
-                max_output_tokens=settings.max_output_tokens,
                 response_mime_type="application/json",
+                response_schema=ExtractionResponse,
             )
             response = await self.client.aio.models.generate_content(
                 model=self.primary_model,
@@ -119,20 +146,39 @@ class GeminiGateway:
 
         raw_json = await self._call_with_retry(_invoke)
         try:
-            data = json.loads(raw_json)
+            normalized_json = (raw_json or "").strip()
+            # If the model still happens to return markdown blocks, strip them
+            if normalized_json.startswith("```"):
+                normalized_json = normalized_json.removeprefix("```").removeprefix("json").removesuffix("```").strip()
+            
+            data = json.loads(normalized_json)
+            if isinstance(data, list):
+                data = {"claims": data}
+            if not isinstance(data, dict):
+                raise ValueError("Claims response must be a JSON object")
+
             extracted_claims = []
-            for item in data.get("claims", [])[:3]:
+            claims = data.get("claims", [])
+            if not isinstance(claims, list):
+                raise ValueError("Claims field must be an array")
+
+            for item in claims[:3]:
+                claim_text = item.get("claimText") if isinstance(item, dict) else None
+                if not isinstance(claim_text, str) or not claim_text.strip():
+                    continue
                 cid = _generate_id("clm")
-                cw = item.get("checkWorthiness", "high").lower()
+                cw = str(item.get("checkWorthiness", "high")).lower()
                 worthiness = CheckWorthiness.high if cw == "high" else (CheckWorthiness.medium if cw == "medium" else CheckWorthiness.low)
+                locations = item.get("locations", [])
+                entities = item.get("entities", [])
                 extracted_claims.append(
                     Claim(
                         claimId=cid,
-                        claimText=item.get("claimText", "")[:2000],
-                        speaker=item.get("speaker"),
-                        claimDate=item.get("claimDate"),
-                        locations=item.get("locations", [])[:10],
-                        entities=item.get("entities", [])[:20],
+                        claimText=claim_text[:2000],
+                        speaker=str(item["speaker"])[:300] if item.get("speaker") is not None else None,
+                        claimDate=str(item["claimDate"]) if item.get("claimDate") is not None else None,
+                        locations=[str(value) for value in locations if value is not None][:10] if isinstance(locations, list) else [],
+                        entities=[str(value) for value in entities if value is not None][:20] if isinstance(entities, list) else [],
                         checkWorthiness=worthiness,
                     )
                 )
@@ -159,7 +205,7 @@ class GeminiGateway:
         evidence_items: List[EvidenceItem],
     ) -> dict:
         """Synthesizes collected evidence items to assess evidence status and confidence."""
-        if not evidence_items:
+        if not evidence_items and not settings.gemini_enabled:
             return {
                 "evidenceStatus": EvidenceStatus.insufficient_evidence,
                 "evidenceConfidence": EvidenceConfidence.low,
@@ -193,11 +239,17 @@ class GeminiGateway:
 
         async def _invoke():
             from google.genai import types
+
+            tools = []
+            if len(evidence_items) == 0:
+                tools.append(types.Tool(google_search=types.GoogleSearch()))
+
             config = types.GenerateContentConfig(
                 system_instruction=EVIDENCE_SYNTHESIS_SYSTEM_PROMPT,
                 temperature=0.2,
-                max_output_tokens=settings.max_output_tokens,
-                response_mime_type="application/json",
+                response_mime_type="application/json" if not tools else None,
+                tools=tools if tools else None,
+                automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True) if tools else None,
             )
             response = await self.client.aio.models.generate_content(
                 model=self.primary_model,
@@ -208,7 +260,20 @@ class GeminiGateway:
 
         raw_json = await self._call_with_retry(_invoke)
         try:
-            data = json.loads(raw_json)
+            if not raw_json:
+                raise ValueError("Model returned empty text output.")
+
+            # Clean markdown code blocks if present
+            cleaned_json = raw_json.strip()
+            if cleaned_json.startswith("```"):
+                lines = cleaned_json.split("\n")
+                if lines[0].startswith("```"):
+                    lines = lines[1:]
+                if lines and lines[-1].startswith("```"):
+                    lines = lines[:-1]
+                cleaned_json = "\n".join(lines).strip()
+
+            data = json.loads(cleaned_json)
             status_str = data.get("evidenceStatus", "insufficient_evidence")
             conf_str = data.get("evidenceConfidence", "low")
 
@@ -230,6 +295,70 @@ class GeminiGateway:
                 "assessmentExplanation": "Synthesis schema parsing failed.",
                 "evidenceItemStances": [],
                 "limitations": ["AI response formatting failure."],
+            }
+
+    async def analyze_media_consistency(
+        self,
+        claims: List[Claim],
+        exif_meta: dict,
+        matching_pages: List[dict]
+    ) -> dict:
+        """Analyzes consistency between extracted claims and media metadata."""
+        if not self.client:
+            return {
+                "dateConsistency": ConsistencyStatus.unknown,
+                "locationConsistency": ConsistencyStatus.unknown,
+                "priorContextConsistency": ConsistencyStatus.unknown,
+            }
+
+        prompt_data = {
+            "claims": [c.model_dump() for c in claims],
+            "metadata": exif_meta,
+            "matchingPages": matching_pages,
+        }
+        user_content = f"<media_context>\n{json.dumps(prompt_data, indent=2)}\n</media_context>"
+
+        async def _invoke():
+            from google.genai import types
+            from pydantic import BaseModel
+            
+            class ConsistencyResponse(BaseModel):
+                dateConsistency: str
+                locationConsistency: str
+                priorContextConsistency: str
+                
+            config = types.GenerateContentConfig(
+                system_instruction=MEDIA_CONSISTENCY_SYSTEM_PROMPT,
+                temperature=0.1,
+                response_mime_type="application/json",
+                response_schema=ConsistencyResponse,
+            )
+            response = await self.client.aio.models.generate_content(
+                model=self.primary_model,
+                contents=user_content,
+                config=config,
+            )
+            return response.text
+
+        raw_json = await self._call_with_retry(_invoke)
+        try:
+            data = json.loads(raw_json)
+            def parse_cons(val):
+                if val in ConsistencyStatus._value2member_map_:
+                    return ConsistencyStatus(val)
+                return ConsistencyStatus.unknown
+
+            return {
+                "dateConsistency": parse_cons(data.get("dateConsistency")),
+                "locationConsistency": parse_cons(data.get("locationConsistency")),
+                "priorContextConsistency": parse_cons(data.get("priorContextConsistency")),
+            }
+        except Exception as e:
+            logger.error(f"Failed to parse media consistency response: {e}")
+            return {
+                "dateConsistency": ConsistencyStatus.unknown,
+                "locationConsistency": ConsistencyStatus.unknown,
+                "priorContextConsistency": ConsistencyStatus.unknown,
             }
 
     async def stream_chat(
@@ -283,17 +412,26 @@ class GeminiGateway:
                 temperature=0.3,
                 max_output_tokens=settings.max_output_tokens,
             )
-            async for chunk in await self.client.aio.models.generate_content_stream(
-                model=self.primary_model,
-                contents=full_prompt,
-                config=config,
-            ):
+            stream = await asyncio.wait_for(
+                self.client.aio.models.generate_content_stream(
+                    model=self.primary_model,
+                    contents=full_prompt,
+                    config=config,
+                ),
+                timeout=settings.chat_stream_timeout_seconds,
+            )
+            async for chunk in stream:
                 if chunk.text:
                     yield f"data: {json.dumps({'text': chunk.text})}\n\n"
             yield "data: [DONE]\n\n"
         except Exception as e:
-            logger.error(f"Chat streaming error: {e}")
-            yield f"data: {json.dumps({'error': 'Streaming interrupted due to provider error.'})}\n\n"
+            if isinstance(e, asyncio.TimeoutError):
+                message = "The model assistant timed out before it returned a response. Please try again."
+                logger.error("Chat streaming timed out after %s seconds", settings.chat_stream_timeout_seconds)
+            else:
+                message = "Streaming interrupted due to provider error."
+                logger.error(f"Chat streaming error: {e}")
+            yield f"data: {json.dumps({'error': message})}\n\n"
             yield "data: [DONE]\n\n"
 
 

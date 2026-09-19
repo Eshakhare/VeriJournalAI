@@ -1,0 +1,1977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VeriJournal AI — Presentation & Interactive Demo</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            },
+            accent: {
+              cyan: '#06b6d4',
+              indigo: '#6366f1',
+              violet: '#8b5cf6',
+              amber: '#f59e0b',
+              rose: '#f43f5e',
+            },
+            dark: {
+              900: '#070a12',
+              850: '#0c1222',
+              800: '#131b31',
+              700: '#1e2947',
+              600: '#334155',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'float': 'float 4s ease-in-out infinite',
+            'scanline': 'scanline 6s linear infinite',
+            'waveform': 'waveform 1.2s ease-in-out infinite alternate',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-8px)' },
+            },
+            scanline: {
+              '0%': { transform: 'translateY(-100%)' },
+              '100%': { transform: 'translateY(1000%)' },
+            },
+            waveform: {
+              '0%': { height: '6px' },
+              '100%': { height: '28px' }
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+    
+    body {
+      background-color: #070a12;
+      color: #f1f5f9;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .glass-card {
+      background: rgba(19, 27, 49, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-card-hover:hover {
+      background: rgba(25, 36, 66, 0.85);
+      border-color: rgba(6, 182, 212, 0.35);
+      box-shadow: 0 10px 30px -10px rgba(6, 182, 212, 0.2);
+    }
+
+    .glow-cyan {
+      text-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
+    }
+    
+    .glow-emerald {
+      text-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+    }
+
+    /* Custom scrollbar for modals & notes */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(12, 18, 34, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+
+    /* Video player vignette scanline */
+    .video-viewport {
+      position: relative;
+      overflow: hidden;
+    }
+    .video-viewport::after {
+      content: " ";
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+      background-size: 100% 4px;
+      z-index: 20;
+      pointer-events: none;
+      opacity: 0.35;
+    }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between relative font-sans antialiased selection:bg-cyan-500 selection:text-black">
+
+  <!-- Background Ambient Glows -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-cyan-600/15 rounded-full blur-3xl"></div>
+    <div class="absolute top-1/3 -right-40 w-[30rem] h-[30rem] bg-indigo-600/10 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-40 left-1/3 w-[32rem] h-[32rem] bg-emerald-600/10 rounded-full blur-3xl"></div>
+    <div class="absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:24px_24px] opacity-40"></div>
+  </div>
+
+  <!-- Top Header / Presentation Controls -->
+  <header class="relative z-30 flex items-center justify-between px-6 py-3 border-b border-white/5 bg-dark-900/80 backdrop-blur-md">
+    <div class="flex items-center space-x-3">
+      <div class="flex items-center space-x-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
+        <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+        <span class="font-bold tracking-wider text-sm bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-400 bg-clip-text text-transparent">
+          VERIJOURNAL AI
+        </span>
+        <span class="text-xs text-slate-400 border-l border-white/10 pl-2">Executive Presentation</span>
+      </div>
+      <span class="hidden md:inline-flex text-xs px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-mono">
+        v1.0.0 Grounded Fact-Checking
+      </span>
+    </div>
+
+    <!-- Center Slide Counter & Progress -->
+    <div class="flex items-center space-x-3">
+      <div class="flex items-center space-x-2 text-xs font-mono text-slate-300">
+        <span id="slide-current" class="text-cyan-400 font-bold text-sm">01</span>
+        <span class="text-slate-500">/</span>
+        <span id="slide-total" class="text-slate-400">10</span>
+      </div>
+      <div class="w-32 md:w-56 h-1.5 bg-dark-700 rounded-full overflow-hidden">
+        <div id="progress-bar" class="h-full bg-gradient-to-r from-cyan-500 via-indigo-500 to-emerald-400 transition-all duration-300 w-[10%]"></div>
+      </div>
+    </div>
+
+    <!-- Right Actions -->
+    <div class="flex items-center space-x-2">
+      <!-- Audio Toggle -->
+      <button id="btn-audio" onclick="toggleAudio()" class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition" title="Toggle Sound Chimes">
+        <i data-lucide="volume-2" class="w-4 h-4 text-cyan-400"></i>
+      </button>
+
+      <!-- Presenter Notes Toggle -->
+      <button id="btn-notes" onclick="togglePresenterNotes()" class="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition flex items-center space-x-1.5 text-xs font-medium" title="Presenter Notes (N)">
+        <i data-lucide="file-text" class="w-4 h-4 text-amber-400"></i>
+        <span class="hidden sm:inline">Notes</span>
+        <kbd class="hidden md:inline text-[10px] bg-dark-800 text-slate-400 px-1 rounded border border-white/10">N</kbd>
+      </button>
+
+      <!-- Slide Grid Overview -->
+      <button onclick="toggleGridOverview()" class="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition flex items-center space-x-1.5 text-xs font-medium" title="Slide Grid (G)">
+        <i data-lucide="layout-grid" class="w-4 h-4 text-indigo-400"></i>
+        <span class="hidden sm:inline">Slides</span>
+        <kbd class="hidden md:inline text-[10px] bg-dark-800 text-slate-400 px-1 rounded border border-white/10">G</kbd>
+      </button>
+
+      <!-- Fullscreen Toggle -->
+      <button onclick="toggleFullScreen()" class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition" title="Toggle Fullscreen (F)">
+        <i data-lucide="maximize" class="w-4 h-4"></i>
+      </button>
+
+      <!-- Direct Demo Link -->
+      <button onclick="goToSlide(7)" class="hidden lg:flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition animate-pulse-slow">
+        <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+        <span>Live Demo</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Slide Viewport -->
+  <main id="slide-container" class="relative z-10 flex-1 w-full max-w-7xl mx-auto px-4 md:px-8 py-4 flex items-center justify-center overflow-y-auto">
+
+    <!-- ==================== SLIDE 1: TITLE / HOOK ==================== -->
+    <section class="slide active w-full flex flex-col items-center text-center space-y-6" data-slide="1">
+      <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-medium tracking-wide">
+        <i data-lucide="shield-check" class="w-4 h-4 text-cyan-400"></i>
+        <span>Personal Epistemic Integrity & Multimodal Fact-Checking</span>
+      </div>
+
+      <div class="space-y-4 max-w-4xl">
+        <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight">
+          <span class="bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
+            Truth at the Speed of
+          </span>
+          <br />
+          <span class="bg-gradient-to-r from-cyan-400 via-indigo-400 to-emerald-400 bg-clip-text text-transparent">
+            Synthetic Chaos.
+          </span>
+        </h1>
+        <p class="text-slate-300 text-lg sm:text-xl max-w-3xl mx-auto leading-relaxed">
+          How <strong class="text-white font-semibold">VeriJournal AI</strong> stops viral hallucinations and recycled media using a 9-stage asynchronous verification pipeline, search-grounded evidence ledgers, and cognitive bias reflection.
+        </p>
+      </div>
+
+      <!-- Quick Feature Pill Badges -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-3xl w-full pt-4">
+        <div class="glass-card p-3 rounded-xl border border-white/5 flex items-center space-x-3 text-left">
+          <div class="p-2 rounded-lg bg-cyan-500/10 text-cyan-400">
+            <i data-lucide="cpu" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="text-xs font-semibold text-white">9-Stage Pipeline</div>
+            <div class="text-[11px] text-slate-400">Async Cloud Tasks</div>
+          </div>
+        </div>
+
+        <div class="glass-card p-3 rounded-xl border border-white/5 flex items-center space-x-3 text-left">
+          <div class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+            <i data-lucide="file-check-2" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="text-xs font-semibold text-white">Evidence Ledger</div>
+            <div class="text-[11px] text-slate-400">Primary Source RAG</div>
+          </div>
+        </div>
+
+        <div class="glass-card p-3 rounded-xl border border-white/5 flex items-center space-x-3 text-left">
+          <div class="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+            <i data-lucide="clock" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="text-xs font-semibold text-white">Media Timeline</div>
+            <div class="text-[11px] text-slate-400">Observed History</div>
+          </div>
+        </div>
+
+        <div class="glass-card p-3 rounded-xl border border-white/5 flex items-center space-x-3 text-left">
+          <div class="p-2 rounded-lg bg-amber-500/10 text-amber-400">
+            <i data-lucide="brain-circuit" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="text-xs font-semibold text-white">Epistemic Growth</div>
+            <div class="text-[11px] text-slate-400">Belief Delta Tracking</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Prompt -->
+      <div class="pt-6 flex flex-col sm:flex-row items-center gap-3">
+        <button onclick="nextSlide()" class="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-semibold text-sm shadow-lg shadow-cyan-500/25 flex items-center space-x-2 transition transform hover:-translate-y-0.5">
+          <span>Explore Real-World Scenarios</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+        <button onclick="goToSlide(7)" class="px-5 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white text-sm font-medium transition">
+          Skip Directly to Live Demo
+        </button>
+      </div>
+
+      <div class="text-xs text-slate-500 font-mono pt-2">
+        Tip: Use <kbd class="px-1.5 py-0.5 bg-dark-800 border border-white/10 rounded">←</kbd> <kbd class="px-1.5 py-0.5 bg-dark-800 border border-white/10 rounded">→</kbd> arrow keys to navigate slides.
+      </div>
+    </section>
+
+
+    <!-- ==================== SLIDE 2: VIDEO VIGNETTE 1 — THE VIRAL PANIC ==================== -->
+    <section class="slide hidden w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center" data-slide="2">
+      <!-- Left Column: Video Mockup & Visual Testimonial -->
+      <div class="lg:col-span-7 flex flex-col space-y-3">
+        <div class="glass-card rounded-2xl p-4 border border-white/10 shadow-2xl relative">
+          <!-- Video Title Bar -->
+          <div class="flex items-center justify-between pb-3 mb-2 border-b border-white/5 text-xs text-slate-400">
+            <div class="flex items-center space-x-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+              <span class="text-rose-400 font-bold tracking-wider uppercase font-mono">SCENARIO 01 // USER EXPERIENCE</span>
+            </div>
+            <div class="flex items-center space-x-2 font-mono text-[11px]">
+              <span class="px-2 py-0.5 rounded bg-white/5 border border-white/10">TikTok / Reels / X Feed</span>
+              <span>1080p • 60fps</span>
+            </div>
+          </div>
+
+          <!-- Video Player Simulation Container -->
+          <div class="video-viewport w-full aspect-video rounded-xl bg-dark-900 border border-white/10 flex flex-col justify-between p-4 relative group">
+            
+            <!-- Video Background Visual: Simulated Viral Post with Chaos -->
+            <div class="absolute inset-0 z-0 bg-gradient-to-br from-rose-950/40 via-dark-900 to-indigo-950/40 flex items-center justify-center p-6">
+              <div class="w-full max-w-sm glass-card p-4 rounded-xl border border-rose-500/30 shadow-2xl space-y-2 animate-float">
+                <div class="flex items-center justify-between text-[11px] text-rose-300 font-mono">
+                  <span class="flex items-center space-x-1">
+                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
+                    <span>BREAKING ALARM</span>
+                  </span>
+                  <span class="text-slate-400">3 mins ago</span>
+                </div>
+                <div class="text-sm font-bold text-white leading-snug">
+                  "City Drinking Water Declared Toxic Chemical Biohazard! DO NOT DRINK!"
+                </div>
+                <div class="flex items-center space-x-3 text-xs text-slate-400 pt-1">
+                  <span>🔁 482.4K Shares</span>
+                  <span>❤️ 890K</span>
+                  <span>⚠️ 14.2K Panicked Comments</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Video Header Overlay: Persona Avatar & Audio Waveform -->
+            <div class="relative z-10 flex items-center justify-between bg-dark-900/80 backdrop-blur-md p-2.5 rounded-lg border border-white/10">
+              <div class="flex items-center space-x-2.5">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center font-bold text-xs text-white shadow">
+                  MS
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-white flex items-center space-x-1.5">
+                    <span>Maya Sharma</span>
+                    <span class="text-[10px] px-1.5 py-0.2 rounded bg-white/10 text-slate-300 font-normal">Graduate Student & Citizen</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400">Chicago, IL • Sharing lived experience</div>
+                </div>
+              </div>
+
+              <!-- Animated Sound Waveform -->
+              <div class="flex items-center space-x-1 h-5 px-2">
+                <div class="w-1 bg-cyan-400 rounded-full animate-[waveform_0.8s_ease-in-out_infinite_0.1s]"></div>
+                <div class="w-1 bg-cyan-400 rounded-full animate-[waveform_0.8s_ease-in-out_infinite_0.3s]"></div>
+                <div class="w-1 bg-cyan-400 rounded-full animate-[waveform_0.8s_ease-in-out_infinite_0.2s]"></div>
+                <div class="w-1 bg-cyan-400 rounded-full animate-[waveform_0.8s_ease-in-out_infinite_0.4s]"></div>
+                <div class="w-1 bg-cyan-400 rounded-full animate-[waveform_0.8s_ease-in-out_infinite_0.15s]"></div>
+              </div>
+            </div>
+
+            <!-- Video Center: Play/Pause Indicator -->
+            <div class="relative z-10 self-center">
+              <div class="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 shadow-lg cursor-pointer hover:scale-110 transition">
+                <i data-lucide="play" class="w-5 h-5 fill-current ml-0.5"></i>
+              </div>
+            </div>
+
+            <!-- Video Bottom Subtitles / Caption Overlay -->
+            <div class="relative z-10 bg-dark-900/90 backdrop-blur-md p-3 rounded-lg border border-white/10 text-center">
+              <p class="text-xs text-amber-200 font-medium leading-relaxed">
+                💬 <span class="italic">"My family group chat was in full panic mode at 7 AM. People were buying up store shelves. I desperately needed a way to check if this was real right now, not wait 3 days for a news outlet article."</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Video Progress Bar -->
+          <div class="w-full bg-dark-800 h-1 rounded-full mt-2 overflow-hidden">
+            <div class="bg-rose-500 h-full w-2/3"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Problem Breakdown & The Impact -->
+      <div class="lg:col-span-5 flex flex-col space-y-5">
+        <div class="inline-flex items-center space-x-2 text-rose-400 font-mono text-xs font-semibold">
+          <i data-lucide="alert-octagon" class="w-4 h-4"></i>
+          <span>THE CRISIS: VELOCITY & EMOTIONAL HIJACK</span>
+        </div>
+
+        <h2 class="text-3xl font-extrabold text-white leading-tight">
+          Misinformation Spreads <span class="text-rose-400 underline decoration-rose-500/40">6x Faster</span> Than Primary Truth.
+        </h2>
+
+        <div class="space-y-3.5 text-slate-300 text-sm">
+          <div class="flex items-start space-x-3 p-3 rounded-xl bg-white/5 border border-white/5">
+            <div class="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 shrink-0 mt-0.5">
+              <i data-lucide="zap" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <strong class="text-white font-semibold">The Asymmetry of Speed:</strong> Fabricating a deepfake video or false screenshot takes 10 seconds. Traditional fact-checking bureaus take 48 to 72 hours.
+            </div>
+          </div>
+
+          <div class="flex items-start space-x-3 p-3 rounded-xl bg-white/5 border border-white/5">
+            <div class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 shrink-0 mt-0.5">
+              <i data-lucide="flame" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <strong class="text-white font-semibold">Cognitive Contagion:</strong> Emotional shock provokes instant reposts before anyone checks sources or original timestamps.
+            </div>
+          </div>
+
+          <div class="flex items-start space-x-3 p-3 rounded-xl bg-white/5 border border-white/5">
+            <div class="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 shrink-0 mt-0.5">
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <strong class="text-cyan-300 font-semibold">VeriJournal AI's Answer:</strong> Instant multimodal ingestion (URLs, screenshots, claims) producing durable, evidence-backed verifications in seconds.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ==================== SLIDE 3: VIDEO VIGNETTE 2 — THE 40-TAB INVESTIGATIVE HELL ==================== -->
+    <section class="slide hidden w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center" data-slide="3">
+      <!-- Left Column: Video Mockup & Investigator Testimonial -->
+      <div class="lg:col-span-7 flex flex-col space-y-3">
+        <div class="glass-card rounded-2xl p-4 border border-white/10 shadow-2xl relative">
+          <!-- Video Title Bar -->
+          <div class="flex items-center justify-between pb-3 mb-2 border-b border-white/5 text-xs text-slate-400">
+            <div class="flex items-center space-x-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+              <span class="text-cyan-400 font-bold tracking-wider uppercase font-mono">SCENARIO 02 // INVESTIGATOR HELL</span>
+            </div>
+            <div class="flex items-center space-x-2 font-mono text-[11px]">
+              <span class="px-2 py-0.5 rounded bg-white/5 border border-white/10">Newsroom Desk Cam</span>
+              <span>1080p • 60fps</span>
+            </div>
+          </div>
+
+          <!-- Video Viewport: 40 Tabs Nightmare -->
+          <div class="video-viewport w-full aspect-video rounded-xl bg-dark-900 border border-white/10 flex flex-col justify-between p-4 relative">
+            
+            <!-- Video Background Visual: Browser Chaos Simulation -->
+            <div class="absolute inset-0 z-0 bg-dark-950 flex flex-col p-4 opacity-75">
+              <!-- Browser Mockup Window -->
+              <div class="w-full bg-dark-850 rounded-lg border border-white/10 p-2 space-y-2">
+                <!-- Tiny Browser Tabs -->
+                <div class="flex space-x-1 overflow-x-hidden text-[9px] font-mono text-slate-400">
+                  <span class="bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-t">Whois lookup...</span>
+                  <span class="bg-dark-700 px-2 py-0.5 rounded-t">Reverse image search</span>
+                  <span class="bg-dark-700 px-2 py-0.5 rounded-t">Archive.today copy</span>
+                  <span class="bg-dark-700 px-2 py-0.5 rounded-t">EXIF viewer</span>
+                  <span class="bg-dark-700 px-2 py-0.5 rounded-t">Fact Check Tools</span>
+                  <span class="bg-dark-700 px-2 py-0.5 rounded-t">+34 more tabs</span>
+                </div>
+                <div class="h-20 bg-dark-900 rounded p-2 text-[10px] font-mono text-slate-400 space-y-1">
+                  <div class="text-rose-400">⚠️ Domain spoofing detected: bbc-breaking-wire.co.cc (Not genuine BBC)</div>
+                  <div class="text-slate-500">> Searching 14 reverse-image engine caches...</div>
+                  <div class="text-slate-500">> Cross-checking Google Fact Check Tools API v1alpha1...</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Video Header Overlay -->
+            <div class="relative z-10 flex items-center justify-between bg-dark-900/80 backdrop-blur-md p-2.5 rounded-lg border border-white/10">
+              <div class="flex items-center space-x-2.5">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center font-bold text-xs text-white shadow">
+                  DK
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-white flex items-center space-x-1.5">
+                    <span>David Kim</span>
+                    <span class="text-[10px] px-1.5 py-0.2 rounded bg-white/10 text-slate-300 font-normal">Investigative Journalist</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400">Independent Newsroom • Verification Lead</div>
+                </div>
+              </div>
+
+              <!-- Animated Sound Waveform -->
+              <div class="flex items-center space-x-1 h-5 px-2">
+                <div class="w-1 bg-emerald-400 rounded-full animate-[waveform_0.9s_ease-in-out_infinite_0.1s]"></div>
+                <div class="w-1 bg-emerald-400 rounded-full animate-[waveform_0.9s_ease-in-out_infinite_0.3s]"></div>
+                <div class="w-1 bg-emerald-400 rounded-full animate-[waveform_0.9s_ease-in-out_infinite_0.2s]"></div>
+                <div class="w-1 bg-emerald-400 rounded-full animate-[waveform_0.9s_ease-in-out_infinite_0.5s]"></div>
+              </div>
+            </div>
+
+            <!-- Center Play Indicator -->
+            <div class="relative z-10 self-center">
+              <div class="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 shadow-lg cursor-pointer hover:scale-110 transition">
+                <i data-lucide="play" class="w-5 h-5 fill-current ml-0.5"></i>
+              </div>
+            </div>
+
+            <!-- Video Bottom Subtitles -->
+            <div class="relative z-10 bg-dark-900/90 backdrop-blur-md p-3 rounded-lg border border-white/10 text-center">
+              <p class="text-xs text-cyan-200 font-medium leading-relaxed">
+                💬 <span class="italic">"Investigating a single viral photo took me 4 hours of opening 40 tabs: Safe Browsing, reverse searches, EXIF decoders, Google Fact Check Tools. And then I had nowhere to save an auditable report."</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Video Progress Bar -->
+          <div class="w-full bg-dark-800 h-1 rounded-full mt-2 overflow-hidden">
+            <div class="bg-cyan-500 h-full w-4/5"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: What Breaks & How VeriJournal Solves It -->
+      <div class="lg:col-span-5 flex flex-col space-y-5">
+        <div class="inline-flex items-center space-x-2 text-cyan-400 font-mono text-xs font-semibold">
+          <i data-lucide="layers" class="w-4 h-4"></i>
+          <span>THE INVESTIGATIVE BOTTLENECK</span>
+        </div>
+
+        <h2 class="text-3xl font-extrabold text-white leading-tight">
+          Verification is Fragmented, Fragile, & Unstructured.
+        </h2>
+
+        <div class="space-y-3.5 text-slate-300 text-sm">
+          <div class="flex items-start space-x-3 p-3 rounded-xl bg-white/5 border border-white/5">
+            <div class="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 shrink-0 mt-0.5">
+              <i data-lucide="shield-alert" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <strong class="text-white font-semibold">Dangerous Infrastructure:</strong> Clicking suspicious links exposes researchers to SSRF attacks, malware, and DNS rebinding tricks.
+            </div>
+          </div>
+
+          <div class="flex items-start space-x-3 p-3 rounded-xl bg-white/5 border border-white/5">
+            <div class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 shrink-0 mt-0.5">
+              <i data-lucide="file-question" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <strong class="text-white font-semibold">No Evidence Ledger:</strong> Claims get debated with opinions because there is no standardized, reproducible citation table linking exact quotes.
+            </div>
+          </div>
+
+          <div class="flex items-start space-x-3 p-3 rounded-xl bg-white/5 border border-white/5">
+            <div class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 shrink-0 mt-0.5">
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <strong class="text-emerald-300 font-semibold">VeriJournal AI's Answer:</strong> Unified 9-stage pipeline combining SSRF defense, Google Safe Browsing, Fact Check Tools API, Cloud Vision Web Detection, and an immutable Evidence Ledger in one click.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ==================== SLIDE 4: VIDEO VIGNETTE 3 — THE BIAS PARADOX ==================== -->
+    <section class="slide hidden w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center" data-slide="4">
+      <!-- Left Column: Video Mockup & Cognitive Science Testimonial -->
+      <div class="lg:col-span-7 flex flex-col space-y-3">
+        <div class="glass-card rounded-2xl p-4 border border-white/10 shadow-2xl relative">
+          <!-- Video Title Bar -->
+          <div class="flex items-center justify-between pb-3 mb-2 border-b border-white/5 text-xs text-slate-400">
+            <div class="flex items-center space-x-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-violet-400 animate-ping"></span>
+              <span class="text-violet-400 font-bold tracking-wider uppercase font-mono">SCENARIO 03 // COGNITIVE BLINDSPOT</span>
+            </div>
+            <div class="flex items-center space-x-2 font-mono text-[11px]">
+              <span class="px-2 py-0.5 rounded bg-white/5 border border-white/10">Epistemic Research Lab</span>
+              <span>1080p • 60fps</span>
+            </div>
+          </div>
+
+          <!-- Video Viewport: Brain / Bias Simulation -->
+          <div class="video-viewport w-full aspect-video rounded-xl bg-dark-900 border border-white/10 flex flex-col justify-between p-4 relative">
+            
+            <!-- Video Background Visual: Belief Delta Slider Mockup -->
+            <div class="absolute inset-0 z-0 bg-gradient-to-tr from-violet-950/40 via-dark-900 to-cyan-950/40 flex items-center justify-center p-6">
+              <div class="w-full max-w-sm glass-card p-4 rounded-xl border border-violet-500/30 space-y-3">
+                <div class="text-xs font-semibold text-white flex items-center justify-between">
+                  <span>Personal Epistemic Delta</span>
+                  <span class="text-xs font-mono text-cyan-400 font-bold">+50% Shift</span>
+                </div>
+                <!-- Sliders visualization -->
+                <div class="space-y-2">
+                  <div class="space-y-1">
+                    <div class="flex justify-between text-[11px] text-slate-400">
+                      <span>Prior Belief (Pre-evidence):</span>
+                      <span class="text-amber-400 font-mono">35%</span>
+                    </div>
+                    <div class="w-full bg-dark-700 h-1.5 rounded-full overflow-hidden">
+                      <div class="bg-amber-400 h-full w-[35%]"></div>
+                    </div>
+                  </div>
+                  <div class="space-y-1">
+                    <div class="flex justify-between text-[11px] text-slate-400">
+                      <span>Post-Evidence Calibrated Confidence:</span>
+                      <span class="text-emerald-400 font-mono">85%</span>
+                    </div>
+                    <div class="w-full bg-dark-700 h-1.5 rounded-full overflow-hidden">
+                      <div class="bg-emerald-400 h-full w-[85%]"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="text-[10px] text-slate-400 italic bg-white/5 p-2 rounded">
+                  "I initially thought the satellite retreat was clickbait, but ESA Sentinel raw altimetry confirmed it."
+                </div>
+              </div>
+            </div>
+
+            <!-- Video Header Overlay -->
+            <div class="relative z-10 flex items-center justify-between bg-dark-900/80 backdrop-blur-md p-2.5 rounded-lg border border-white/10">
+              <div class="flex items-center space-x-2.5">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-500 to-cyan-500 flex items-center justify-center font-bold text-xs text-white shadow">
+                  DR
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-white flex items-center space-x-1.5">
+                    <span>Dr. Elena Vance</span>
+                    <span class="text-[10px] px-1.5 py-0.2 rounded bg-white/10 text-slate-300 font-normal">Cognitive Science & Media Fellow</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400">Center for Epistemic Integrity</div>
+                </div>
+              </div>
+
+              <!-- Animated Sound Waveform -->
+              <div class="flex items-center space-x-1 h-5 px-2">
+                <div class="w-1 bg-violet-400 rounded-full animate-[waveform_1s_ease-in-out_infinite_0.2s]"></div>
+                <div class="w-1 bg-violet-400 rounded-full animate-[waveform_1s_ease-in-out_infinite_0.4s]"></div>
+                <div class="w-1 bg-violet-400 rounded-full animate-[waveform_1s_ease-in-out_infinite_0.1s]"></div>
+              </div>
+            </div>
+
+            <!-- Center Play Indicator -->
+            <div class="relative z-10 self-center">
+              <div class="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 shadow-lg cursor-pointer hover:scale-110 transition">
+                <i data-lucide="play" class="w-5 h-5 fill-current ml-0.5"></i>
+              </div>
+            </div>
+
+            <!-- Video Bottom Subtitles -->
+            <div class="relative z-10 bg-dark-900/90 backdrop-blur-md p-3 rounded-lg border border-white/10 text-center">
+              <p class="text-xs text-violet-200 font-medium leading-relaxed">
+                💬 <span class="italic">"Slapping an aggressive 'FALSE' badge on someone's screen triggers the backfire effect. People double down. The only way to build critical thinking is to let people record their prior assumption and measure their own belief shift."</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Video Progress Bar -->
+          <div class="w-full bg-dark-800 h-1 rounded-full mt-2 overflow-hidden">
+            <div class="bg-violet-500 h-full w-1/2"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Epistemic Solution -->
+      <div class="lg:col-span-5 flex flex-col space-y-5">
+        <div class="inline-flex items-center space-x-2 text-violet-400 font-mono text-xs font-semibold">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+          <span>THE PSYCHOLOGY OF BELIEF</span>
+        </div>
+
+        <h2 class="text-3xl font-extrabold text-white leading-tight">
+          Truth Isn't a Binary Stamp. It's an Auditable Journey.
+        </h2>
+
+        <div class="space-y-3.5 text-slate-300 text-sm">
+          <div class="flex items-start space-x-3 p-3 rounded-xl bg-white/5 border border-white/5">
+            <div class="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 shrink-0 mt-0.5">
+              <i data-lucide="x-circle" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <strong class="text-white font-semibold">The Backfire Effect:</strong> Confrontational labeling makes users defensive and reinforces tribal confirmation bias.
+            </div>
+          </div>
+
+          <div class="flex items-start space-x-3 p-3 rounded-xl bg-white/5 border border-white/5">
+            <div class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 shrink-0 mt-0.5">
+              <i data-lucide="lock" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <strong class="text-white font-semibold">No Political Profiling:</strong> VeriJournal AI never scores a user's ideology or sends their personal reflections to any public feed.
+            </div>
+          </div>
+
+          <div class="flex items-start space-x-3 p-3 rounded-xl bg-white/5 border border-white/5">
+            <div class="p-1.5 rounded-lg bg-violet-500/10 text-violet-400 shrink-0 mt-0.5">
+              <i data-lucide="compass" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <strong class="text-violet-300 font-semibold">Personal Epistemic Journaling:</strong> Users log their initial intuition, review the verified primary evidence, and record a calibrated confidence shift with full owner privacy.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ==================== SLIDE 5: THE SOLUTION — INTRODUCING VERIJOURNAL AI ==================== -->
+    <section class="slide hidden w-full flex flex-col items-center text-center space-y-6" data-slide="5">
+      <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-medium">
+        <i data-lucide="check-check" class="w-4 h-4 text-emerald-400"></i>
+        <span>THE ARCHITECTURAL SOLUTION</span>
+      </div>
+
+      <div class="space-y-3 max-w-4xl">
+        <h2 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">
+          Meet <span class="bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-400 bg-clip-text text-transparent">VeriJournal AI</span>
+        </h2>
+        <p class="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto">
+          An authenticated personal fact-checking platform that combines industrial-grade verification with introspective media literacy.
+        </p>
+      </div>
+
+      <!-- 4 Pillars Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-6xl text-left pt-2">
+        <!-- Pillar 1 -->
+        <div class="glass-card p-5 rounded-2xl border border-cyan-500/20 glass-card-hover transition group space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition">
+            <i data-lucide="network" class="w-5 h-5"></i>
+          </div>
+          <h3 class="text-base font-bold text-white">9-Stage Asynchronous Engine</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Non-blocking HTTP 202 queue architecture running SSRF checks, Google Safe Browsing v4, Gemini claim extraction, and Fact Check Tools API.
+          </p>
+          <div class="text-[11px] font-mono text-cyan-400 font-semibold pt-1">
+            → Zero timeouts on heavy tasks
+          </div>
+        </div>
+
+        <!-- Pillar 2 -->
+        <div class="glass-card p-5 rounded-2xl border border-emerald-500/20 glass-card-hover transition group space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition">
+            <i data-lucide="scale" class="w-5 h-5"></i>
+          </div>
+          <h3 class="text-base font-bold text-white">Evidence Ledger with Categorical Stance</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Replaces hallucinated "87% True" scores with rigorous categorical confidence: <code class="text-emerald-400">Supported</code>, <code class="text-rose-400">Contradicted</code>, or <code class="text-amber-400">Mixed</code> backed by verbatim quotes.
+          </p>
+          <div class="text-[11px] font-mono text-emerald-400 font-semibold pt-1">
+            → Auditable citation provenance
+          </div>
+        </div>
+
+        <!-- Pillar 3 -->
+        <div class="glass-card p-5 rounded-2xl border border-indigo-500/20 glass-card-hover transition group space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition">
+            <i data-lucide="history" class="w-5 h-5"></i>
+          </div>
+          <h3 class="text-base font-bold text-white">Observed Media & Claim Timeline</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Forensic reverse-search chronology separating earliest observed web appearances from current claim dates, exposing recycled crisis photos.
+          </p>
+          <div class="text-[11px] font-mono text-indigo-400 font-semibold pt-1">
+            → Solves context collapse
+          </div>
+        </div>
+
+        <!-- Pillar 4 -->
+        <div class="glass-card p-5 rounded-2xl border border-amber-500/20 glass-card-hover transition group space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-110 transition">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+          </div>
+          <h3 class="text-base font-bold text-white">Epistemic Reflection & Report Chat</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Quantifies personal confidence shifts (before vs after), prompts meta-cognitive self-checks, and offers an AI copilot grounded exclusively in report citations.
+          </p>
+          <div class="text-[11px] font-mono text-amber-400 font-semibold pt-1">
+            → Long-term media literacy
+          </div>
+        </div>
+      </div>
+
+      <!-- Trust Directives Bottom Banner -->
+      <div class="w-full max-w-6xl glass-card py-3 px-6 rounded-xl border border-white/10 flex flex-wrap items-center justify-between text-xs text-slate-400">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="shield" class="w-4 h-4 text-cyan-400"></i>
+          <span class="text-white font-medium">Core Guarantees:</span>
+        </div>
+        <span>🔒 Zero Client-Side Secrets</span>
+        <span>🛡️ Strict Tenant Owner Isolation (`users/{uid}/...`)</span>
+        <span>📍 Automatic EXIF/GPS Privacy Stripping</span>
+        <span>⚖️ Full GDPR Erasure & JSON Export</span>
+      </div>
+    </section>
+
+
+    <!-- ==================== SLIDE 6: THE 9-STAGE ASYNCHRONOUS ENGINE ==================== -->
+    <section class="slide hidden w-full flex flex-col space-y-5" data-slide="6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-white/5 pb-3">
+        <div>
+          <div class="inline-flex items-center space-x-2 text-cyan-400 font-mono text-xs font-semibold">
+            <i data-lucide="cpu" class="w-4 h-4"></i>
+            <span>SYSTEM ARCHITECTURE & PIPELINE</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white">
+            The 9-Stage Asynchronous Verification Contract
+          </h2>
+        </div>
+        <div class="flex items-center space-x-2 text-xs font-mono text-slate-400">
+          <span class="px-2.5 py-1 rounded bg-dark-800 border border-white/10 text-cyan-300">HTTP 202 Accepted</span>
+          <span class="px-2.5 py-1 rounded bg-dark-800 border border-white/10 text-indigo-300">Cloud Tasks Queue</span>
+          <span class="px-2.5 py-1 rounded bg-dark-800 border border-white/10 text-emerald-300">Cloud Run OIDC Worker</span>
+        </div>
+      </div>
+
+      <!-- Pipeline Stages Visual Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 flex-1">
+        <!-- Stage 1-3 -->
+        <div class="space-y-3">
+          <div class="text-xs font-bold text-cyan-400 uppercase tracking-wider font-mono flex items-center space-x-2">
+            <span>Phase I: Ingress & Defenses</span>
+            <div class="h-px flex-1 bg-cyan-500/20"></div>
+          </div>
+
+          <div class="glass-card p-3.5 rounded-xl border border-white/5 hover:border-cyan-500/30 transition space-y-1.5">
+            <div class="flex items-center justify-between text-xs font-bold text-white">
+              <span class="flex items-center space-x-2">
+                <span class="w-5 h-5 rounded bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-mono text-[10px]">1</span>
+                <span>validating_input</span>
+              </span>
+              <span class="text-[10px] text-slate-400 font-mono">PayloadLimit</span>
+            </div>
+            <p class="text-xs text-slate-300">Enforces schema contracts, Idempotency-Key headers, and sliding-window rate limits per UID.</p>
+          </div>
+
+          <div class="glass-card p-3.5 rounded-xl border border-white/5 hover:border-cyan-500/30 transition space-y-1.5">
+            <div class="flex items-center justify-between text-xs font-bold text-white">
+              <span class="flex items-center space-x-2">
+                <span class="w-5 h-5 rounded bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-mono text-[10px]">2</span>
+                <span>checking_url</span>
+              </span>
+              <span class="text-[10px] text-rose-400 font-mono">Safe Browsing</span>
+            </div>
+            <p class="text-xs text-slate-300">Google Safe Browsing v4 API checks + domain impersonation heuristics (typosquatting, lookalike domains).</p>
+          </div>
+
+          <div class="glass-card p-3.5 rounded-xl border border-white/5 hover:border-cyan-500/30 transition space-y-1.5">
+            <div class="flex items-center justify-between text-xs font-bold text-white">
+              <span class="flex items-center space-x-2">
+                <span class="w-5 h-5 rounded bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-mono text-[10px]">3</span>
+                <span>extracting_content</span>
+              </span>
+              <span class="text-[10px] text-amber-400 font-mono">SSRF Shield</span>
+            </div>
+            <p class="text-xs text-slate-300">Hardened SSRF fetcher: pre-resolves DNS, blocks private RFC 1918, loopback, and Cloud metadata IPs.</p>
+          </div>
+        </div>
+
+        <!-- Stage 4-6 -->
+        <div class="space-y-3">
+          <div class="text-xs font-bold text-indigo-400 uppercase tracking-wider font-mono flex items-center space-x-2">
+            <span>Phase II: AI & Evidence RAG</span>
+            <div class="h-px flex-1 bg-indigo-500/20"></div>
+          </div>
+
+          <div class="glass-card p-3.5 rounded-xl border border-white/5 hover:border-indigo-500/30 transition space-y-1.5">
+            <div class="flex items-center justify-between text-xs font-bold text-white">
+              <span class="flex items-center space-x-2">
+                <span class="w-5 h-5 rounded bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-mono text-[10px]">4</span>
+                <span>extracting_claims</span>
+              </span>
+              <span class="text-[10px] text-indigo-300 font-mono">Gemini Vertex</span>
+            </div>
+            <p class="text-xs text-slate-300">Gemini 2.5 extracts max 3 atomic, verifiable claims inside data-only prompt envelopes (no prompt injection).</p>
+          </div>
+
+          <div class="glass-card p-3.5 rounded-xl border border-white/5 hover:border-indigo-500/30 transition space-y-1.5">
+            <div class="flex items-center justify-between text-xs font-bold text-white">
+              <span class="flex items-center space-x-2">
+                <span class="w-5 h-5 rounded bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-mono text-[10px]">5</span>
+                <span>checking_fact_checks</span>
+              </span>
+              <span class="text-[10px] text-cyan-300 font-mono">Fact Check API</span>
+            </div>
+            <p class="text-xs text-slate-300">Queries Google Fact Check Tools API v1alpha1 across global accredited rating agencies (PolitiFact, AFP, etc.).</p>
+          </div>
+
+          <div class="glass-card p-3.5 rounded-xl border border-white/5 hover:border-indigo-500/30 transition space-y-1.5">
+            <div class="flex items-center justify-between text-xs font-bold text-white">
+              <span class="flex items-center space-x-2">
+                <span class="w-5 h-5 rounded bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-mono text-[10px]">6</span>
+                <span>retrieving_evidence</span>
+              </span>
+              <span class="text-[10px] text-emerald-300 font-mono">Search RAG</span>
+            </div>
+            <p class="text-xs text-slate-300">Generates search queries, retrieves multi-angle sources, extracts exact citations, and classifies stance.</p>
+          </div>
+        </div>
+
+        <!-- Stage 7-9 -->
+        <div class="space-y-3">
+          <div class="text-xs font-bold text-emerald-400 uppercase tracking-wider font-mono flex items-center space-x-2">
+            <span>Phase III: Forensics & Storage</span>
+            <div class="h-px flex-1 bg-emerald-500/20"></div>
+          </div>
+
+          <div class="glass-card p-3.5 rounded-xl border border-white/5 hover:border-emerald-500/30 transition space-y-1.5">
+            <div class="flex items-center justify-between text-xs font-bold text-white">
+              <span class="flex items-center space-x-2">
+                <span class="w-5 h-5 rounded bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-mono text-[10px]">7</span>
+                <span>analyzing_media</span>
+              </span>
+              <span class="text-[10px] text-amber-300 font-mono">Vision & EXIF</span>
+            </div>
+            <p class="text-xs text-slate-300">Pillow magic bytes, EXIF GPS privacy strip, Cloud Vision web detection (earliest observed web matches).</p>
+          </div>
+
+          <div class="glass-card p-3.5 rounded-xl border border-white/5 hover:border-emerald-500/30 transition space-y-1.5">
+            <div class="flex items-center justify-between text-xs font-bold text-white">
+              <span class="flex items-center space-x-2">
+                <span class="w-5 h-5 rounded bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-mono text-[10px]">8</span>
+                <span>building_timeline</span>
+              </span>
+              <span class="text-[10px] text-indigo-300 font-mono">Chronology</span>
+            </div>
+            <p class="text-xs text-slate-300">Assembles event occurrences, media discovery history, and publication dates into unified timeline.</p>
+          </div>
+
+          <div class="glass-card p-3.5 rounded-xl border border-white/5 hover:border-emerald-500/30 transition space-y-1.5">
+            <div class="flex items-center justify-between text-xs font-bold text-white">
+              <span class="flex items-center space-x-2">
+                <span class="w-5 h-5 rounded bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-mono text-[10px]">9</span>
+                <span>saving_report</span>
+              </span>
+              <span class="text-[10px] text-emerald-300 font-mono">Firestore Subcollections</span>
+            </div>
+            <p class="text-xs text-slate-300">Durable storage under <code class="text-emerald-300">users/{uid}/journalEntries/{id}</code> with owner-only access rules.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ==================== SLIDE 7: INTERACTIVE DEMO STAGE ==================== -->
+    <section class="slide hidden w-full flex flex-col space-y-4" data-slide="7">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-white/5 pb-2">
+        <div>
+          <div class="inline-flex items-center space-x-2 text-emerald-400 font-mono text-xs font-semibold">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span>LIVE INTERACTIVE DEMO PLAYBOOK</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white">
+            Experience VeriJournal AI in Action
+          </h2>
+        </div>
+
+        <!-- Sample Scenario Selector -->
+        <div class="flex items-center space-x-2">
+          <span class="text-xs text-slate-400 font-mono">Select Sample:</span>
+          <button onclick="loadDemoScenario('arctic')" id="btn-sample-arctic" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 text-xs font-medium transition">
+            🛰️ Arctic Satellites
+          </button>
+          <button onclick="loadDemoScenario('protest')" id="btn-sample-protest" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 text-xs font-medium transition">
+            📷 Recycled Protest Photo
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Interactive Demo Sandbox -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+        <!-- Left: Input & Interactive Stage Ticker (5 cols) -->
+        <div class="lg:col-span-5 flex flex-col space-y-3">
+          <div class="glass-card p-4 rounded-xl border border-white/10 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-white uppercase tracking-wider font-mono">Verification Input</span>
+              <span id="demo-badge-type" class="text-[10px] px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-mono">ARTICLE_URL</span>
+            </div>
+
+            <!-- Simulated Input Box -->
+            <div class="space-y-1.5">
+              <div class="text-[11px] text-slate-400 font-mono" id="demo-input-label">Target Investigation:</div>
+              <div id="demo-input-box" class="w-full bg-dark-900 border border-white/10 p-2.5 rounded-lg text-xs font-mono text-cyan-300 truncate">
+                https://example-sci-daily.org/reports/arctic-shelf-measurements
+              </div>
+            </div>
+
+            <!-- Run Demo Trigger Button -->
+            <button id="btn-run-demo" onclick="triggerSimulatedPipeline()" class="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-white font-semibold text-xs shadow-lg shadow-emerald-500/20 flex items-center justify-center space-x-2 transition">
+              <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+              <span id="btn-run-demo-text">Execute 9-Stage Pipeline</span>
+            </button>
+          </div>
+
+          <!-- Asynchronous Stage Progress Ticker -->
+          <div class="glass-card p-4 rounded-xl border border-white/10 flex-1 flex flex-col space-y-2">
+            <div class="flex items-center justify-between text-xs font-mono">
+              <span class="text-slate-400">Pipeline Status:</span>
+              <span id="demo-status-text" class="text-emerald-400 font-bold">READY TO VERIFY</span>
+            </div>
+
+            <div class="space-y-1.5 overflow-y-auto max-h-48 pr-1 font-mono text-[11px]">
+              <div id="stage-1" class="flex items-center justify-between p-1.5 rounded bg-white/5 border border-white/5 text-slate-400">
+                <span>1. validating_input</span>
+                <span class="stage-status text-slate-500">pending</span>
+              </div>
+              <div id="stage-2" class="flex items-center justify-between p-1.5 rounded bg-white/5 border border-white/5 text-slate-400">
+                <span>2. checking_url (Safe Browsing)</span>
+                <span class="stage-status text-slate-500">pending</span>
+              </div>
+              <div id="stage-3" class="flex items-center justify-between p-1.5 rounded bg-white/5 border border-white/5 text-slate-400">
+                <span>3. extracting_content (SSRF shield)</span>
+                <span class="stage-status text-slate-500">pending</span>
+              </div>
+              <div id="stage-4" class="flex items-center justify-between p-1.5 rounded bg-white/5 border border-white/5 text-slate-400">
+                <span>4. extracting_claims (Gemini 2.5)</span>
+                <span class="stage-status text-slate-500">pending</span>
+              </div>
+              <div id="stage-5" class="flex items-center justify-between p-1.5 rounded bg-white/5 border border-white/5 text-slate-400">
+                <span>5. checking_fact_checks (Tools API)</span>
+                <span class="stage-status text-slate-500">pending</span>
+              </div>
+              <div id="stage-6" class="flex items-center justify-between p-1.5 rounded bg-white/5 border border-white/5 text-slate-400">
+                <span>6. retrieving_evidence (Search RAG)</span>
+                <span class="stage-status text-slate-500">pending</span>
+              </div>
+              <div id="stage-7" class="flex items-center justify-between p-1.5 rounded bg-white/5 border border-white/5 text-slate-400">
+                <span>7. analyzing_media (Vision Web)</span>
+                <span class="stage-status text-slate-500">pending</span>
+              </div>
+              <div id="stage-8" class="flex items-center justify-between p-1.5 rounded bg-white/5 border border-white/5 text-slate-400">
+                <span>8. building_timeline</span>
+                <span class="stage-status text-slate-500">pending</span>
+              </div>
+              <div id="stage-9" class="flex items-center justify-between p-1.5 rounded bg-white/5 border border-white/5 text-slate-400">
+                <span>9. saving_report</span>
+                <span class="stage-status text-slate-500">pending</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Real-time Result Inspection (7 cols) -->
+        <div class="lg:col-span-7 flex flex-col space-y-3">
+          <div class="glass-card p-4 rounded-xl border border-white/10 flex-1 flex flex-col space-y-3">
+            <!-- Result Header -->
+            <div class="flex items-start justify-between border-b border-white/5 pb-3">
+              <div>
+                <div class="flex items-center space-x-2">
+                  <span id="demo-result-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    SUPPORTED
+                  </span>
+                  <span id="demo-confidence-badge" class="text-xs text-slate-400 font-mono">
+                    High Confidence
+                  </span>
+                </div>
+                <h3 id="demo-result-title" class="text-base font-bold text-white mt-1">
+                  Investigation: Satellite Imagery of Arctic Ice Shelves
+                </h3>
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] font-mono text-slate-400">CONTRACT 1.0</span>
+              </div>
+            </div>
+
+            <!-- Tabs: Claims / Evidence Ledger / Timeline / Reflection -->
+            <div class="flex space-x-2 border-b border-white/5 pb-2 text-xs">
+              <button onclick="switchDemoTab('ledger')" id="demo-tab-ledger" class="px-2.5 py-1 rounded bg-cyan-500/20 text-cyan-300 font-medium">Evidence Ledger (3)</button>
+              <button onclick="switchDemoTab('timeline')" id="demo-tab-timeline" class="px-2.5 py-1 rounded text-slate-400 hover:text-white">Observed Timeline (3)</button>
+              <button onclick="switchDemoTab('reflection')" id="demo-tab-reflection" class="px-2.5 py-1 rounded text-slate-400 hover:text-white">Epistemic Reflection</button>
+            </div>
+
+            <!-- Tab Content: Evidence Ledger -->
+            <div id="demo-pane-ledger" class="space-y-2.5 overflow-y-auto max-h-56 pr-1 text-xs">
+              <div class="p-2.5 rounded-lg bg-dark-900 border border-emerald-500/20 space-y-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-white">European Space Agency (ESA Sentinel)</span>
+                  <span class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">SUPPORTS</span>
+                </div>
+                <p class="text-slate-300 text-[11px] italic">"Radar altimetry measurements indicate a 12.1 +/- 0.4% mean elevation reduction across sector B-17..."</p>
+                <div class="text-[10px] text-slate-400 font-mono">Published: 2026-03-01 • Primary telemetry verified</div>
+              </div>
+
+              <div class="p-2.5 rounded-lg bg-dark-900 border border-emerald-500/20 space-y-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-white">NSIDC Monthly Data Archives</span>
+                  <span class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">SUPPORTS</span>
+                </div>
+                <p class="text-slate-300 text-[11px] italic">"Independent passive microwave radiometry confirms regional thinning trends..."</p>
+                <div class="text-[10px] text-slate-400 font-mono">Published: 2026-02-28 • Peer-calibrated sensor logs</div>
+              </div>
+
+              <div class="p-2.5 rounded-lg bg-dark-900 border border-rose-500/20 space-y-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-white">Climate-Critique Blog (Unverified)</span>
+                  <span class="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 text-[10px] font-mono">CONTRADICTS</span>
+                </div>
+                <p class="text-slate-300 text-[11px] italic">"Claims radar reflection artifacts caused by wet snow melt distort estimates by 20%."</p>
+                <div class="text-[10px] text-slate-400 font-mono">Published: 2026-03-01 • Self-published opinion blog</div>
+              </div>
+            </div>
+
+            <!-- Tab Content: Timeline -->
+            <div id="demo-pane-timeline" class="hidden space-y-2.5 overflow-y-auto max-h-56 pr-1 text-xs font-mono">
+              <div class="p-2.5 rounded-lg bg-dark-900 border border-white/10 space-y-1">
+                <div class="flex justify-between text-cyan-400 text-[11px]">
+                  <span>2026-02-14 • CLAIMED EVENT</span>
+                  <span class="text-slate-500">Confidence: High</span>
+                </div>
+                <div class="text-white text-xs">Initial presentation of radar telemetry data at Oslo Glaciology Workshop.</div>
+              </div>
+              <div class="p-2.5 rounded-lg bg-dark-900 border border-white/10 space-y-1">
+                <div class="flex justify-between text-indigo-400 text-[11px]">
+                  <span>2026-02-28 • PUBLISHED DATA</span>
+                  <span class="text-slate-500">Confidence: High</span>
+                </div>
+                <div class="text-white text-xs">NSIDC releases independent passive microwave datasets verifying thinning.</div>
+              </div>
+              <div class="p-2.5 rounded-lg bg-dark-900 border border-emerald-400 text-[11px]">
+                <span>2026-03-02 • FACT CHECK REVIEW</span>
+                <span class="text-slate-500">Confidence: High</span>
+              </div>
+              <div class="text-white text-xs">Google Fact Check Tools registers corroborating review by Climate Desk.</div>
+            </div>
+
+            <!-- Tab Content: Reflection -->
+            <div id="demo-pane-reflection" class="hidden space-y-3 overflow-y-auto max-h-56 pr-1 text-xs">
+              <div class="p-3 rounded-lg bg-dark-900 border border-amber-500/30 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-amber-300">Epistemic Confidence Shift</span>
+                  <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono font-bold">+50% Shift</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-[11px]">
+                  <div class="p-2 rounded bg-white/5">
+                    <span class="text-slate-400 block">Prior Intuition:</span>
+                    <strong class="text-amber-400 font-mono">35% Confidence</strong>
+                    <p class="text-slate-300 mt-1 italic">"Assumed it was an exaggerated headline for viral clicks."</p>
+                  </div>
+                  <div class="p-2 rounded bg-white/5">
+                    <span class="text-slate-400 block">Post-Evidence:</span>
+                    <strong class="text-emerald-400 font-mono">85% Confidence</strong>
+                    <p class="text-slate-300 mt-1 italic">"Corroborated by ESA Sentinel raw altimetry."</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Presenter Live Instructions Cue Box -->
+            <div class="p-2.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-between text-xs text-slate-300">
+              <div class="flex items-center space-x-2">
+                <i data-lucide="info" class="w-4 h-4 text-cyan-400"></i>
+                <span>Ready to show the live full-screen app? Switch to <code class="text-cyan-300 bg-dark-900 px-1 py-0.5 rounded">localhost:3000</code> or launch Vite dev server.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ==================== SLIDE 8: TRUST BOUNDARIES & ARCHITECTURE ==================== -->
+    <section class="slide hidden w-full flex flex-col space-y-5" data-slide="8">
+      <div class="border-b border-white/5 pb-3">
+        <div class="inline-flex items-center space-x-2 text-indigo-400 font-mono text-xs font-semibold">
+          <i data-lucide="shield" class="w-4 h-4"></i>
+          <span>DEFENSE-IN-DEPTH SECURITY MODEL</span>
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">
+          Why Enterprises & Newsrooms Trust VeriJournal AI
+        </h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1">
+        <!-- Security Card 1 -->
+        <div class="glass-card p-4 rounded-xl border border-white/5 space-y-2">
+          <div class="flex items-center space-x-2 text-cyan-400 text-sm font-bold">
+            <i data-lucide="key" class="w-4 h-4"></i>
+            <span>Zero Client Secrets</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            No Gemini API keys, Google Cloud service credentials, or third-party tokens are packaged in the web client. All AI generation is performed server-side via Cloud Run using Google Cloud Application Default Credentials (ADC).
+          </p>
+        </div>
+
+        <!-- Security Card 2 -->
+        <div class="glass-card p-4 rounded-xl border border-white/5 space-y-2">
+          <div class="flex items-center space-x-2 text-emerald-400 text-sm font-bold">
+            <i data-lucide="user-check" class="w-4 h-4"></i>
+            <span>Strict Tenant Isolation</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Authenticated UID is derived exclusively from verified Firebase ID tokens. Journal subcollections are partition-locked under <code class="text-emerald-300 font-mono">users/{uid}/journalEntries/...</code>. Cross-tenant access attempts return 404 to avoid ID probing.
+          </p>
+        </div>
+
+        <!-- Security Card 3 -->
+        <div class="glass-card p-4 rounded-xl border border-white/5 space-y-2">
+          <div class="flex items-center space-x-2 text-rose-400 text-sm font-bold">
+            <i data-lucide="shield-alert" class="w-4 h-4"></i>
+            <span>SSRF & DNS Rebinding Shield</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Custom hardened HTTP fetcher pre-resolves hostnames before connecting, strictly rejecting RFC 1918 private subnets, loopback addresses, and cloud instance metadata (<code class="text-rose-300 font-mono">169.254.169.254</code>) on all redirects.
+          </p>
+        </div>
+
+        <!-- Security Card 4 -->
+        <div class="glass-card p-4 rounded-xl border border-white/5 space-y-2">
+          <div class="flex items-center space-x-2 text-amber-400 text-sm font-bold">
+            <i data-lucide="eye-off" class="w-4 h-4"></i>
+            <span>EXIF / GPS Privacy Stripping</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Precise GPS coordinates and camera serial numbers are automatically stripped during Stage 7 media analysis. Location coordinates are never passed to the LLM and only stored if the user explicitly opts in.
+          </p>
+        </div>
+
+        <!-- Security Card 5 -->
+        <div class="glass-card p-4 rounded-xl border border-white/5 space-y-2">
+          <div class="flex items-center space-x-2 text-violet-400 text-sm font-bold">
+            <i data-lucide="terminal" class="w-4 h-4"></i>
+            <span>Data-Only Prompt Envelopes</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Scraped web content and search snippets are isolated inside strict <code class="text-violet-300 font-mono">&lt;untrusted_input&gt;</code> envelopes, neutralizing indirect prompt injection and adversarial jailbreak attacks.
+          </p>
+        </div>
+
+        <!-- Security Card 6 -->
+        <div class="glass-card p-4 rounded-xl border border-white/5 space-y-2">
+          <div class="flex items-center space-x-2 text-indigo-400 text-sm font-bold">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+            <span>GDPR Compliance & Erasure</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Immediate cascaded erasure via <code class="text-indigo-300 font-mono">DELETE /api/v1/journal/entries/{id}</code> purges all claims, evidence, media assets, and chat logs. Full export available via <code class="text-indigo-300 font-mono">POST /api/v1/me/export</code>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ==================== SLIDE 9: FUTURE SCOPE & ROADMAP ==================== -->
+    <section class="slide hidden w-full flex flex-col space-y-5" data-slide="9">
+      <div class="border-b border-white/5 pb-3 flex flex-col md:flex-row md:items-center justify-between gap-2">
+        <div>
+          <div class="inline-flex items-center space-x-2 text-cyan-400 font-mono text-xs font-semibold">
+            <i data-lucide="rocket" class="w-4 h-4"></i>
+            <span>FUTURE ROADMAP & STRATEGIC EXPANSION</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white">
+            Scaling Epistemic Integrity: Horizons 1, 2 & 3
+          </h2>
+        </div>
+        <span class="text-xs font-mono text-emerald-400 px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20">
+          Ready for Strategic Investment
+        </span>
+      </div>
+
+      <!-- Roadmap 3 Horizons -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+        <!-- Horizon 1: Immediate (Next 3-6 Months) -->
+        <div class="glass-card p-5 rounded-2xl border border-cyan-500/20 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono font-bold text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded border border-cyan-500/20">HORIZON 1</span>
+            <span class="text-[11px] text-slate-400 font-mono">3–6 Months</span>
+          </div>
+          <h3 class="text-base font-bold text-white">Everywhere Verification</h3>
+          <ul class="space-y-2 text-xs text-slate-300">
+            <li class="flex items-start space-x-2">
+              <i data-lucide="check" class="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5"></i>
+              <span><strong>Browser Extension:</strong> Highlight text or right-click any viral image on X/Reddit/News to trigger instant 9-stage verification.</span>
+            </li>
+            <li class="flex items-start space-x-2">
+              <i data-lucide="check" class="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5"></i>
+              <span><strong>WhatsApp / Telegram Forward Bot:</strong> Users forward suspicious family group chat messages and get instant evidence ledgers.</span>
+            </li>
+            <li class="flex items-start space-x-2">
+              <i data-lucide="check" class="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5"></i>
+              <span><strong>iOS & Android Native Mobile App:</strong> Camera scanner for print newspapers and QR code verification stamps.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Horizon 2: Mid-Term (6-12 Months) -->
+        <div class="glass-card p-5 rounded-2xl border border-indigo-500/20 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded border border-indigo-500/20">HORIZON 2</span>
+            <span class="text-[11px] text-slate-400 font-mono">6–12 Months</span>
+          </div>
+          <h3 class="text-base font-bold text-white">Cryptographic Provenance</h3>
+          <ul class="space-y-2 text-xs text-slate-300">
+            <li class="flex items-start space-x-2">
+              <i data-lucide="check" class="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5"></i>
+              <span><strong>C2PA Hardware Verification:</strong> Validate camera-level cryptographic signatures (Sony, Leica, Nikon) directly in the media pipeline.</span>
+            </li>
+            <li class="flex items-start space-x-2">
+              <i data-lucide="check" class="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5"></i>
+              <span><strong>Keyframe Video Deepfake Detector:</strong> Automated scene splitting and synthetic face warping analysis for viral video reels.</span>
+            </li>
+            <li class="flex items-start space-x-2">
+              <i data-lucide="check" class="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5"></i>
+              <span><strong>Enterprise Newsroom API:</strong> High-throughput B2B ingest for editorial desks to pre-vet incoming citizen tips.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Horizon 3: Long-Term (12-24 Months) -->
+        <div class="glass-card p-5 rounded-2xl border border-emerald-500/20 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20">HORIZON 3</span>
+            <span class="text-[11px] text-slate-400 font-mono">12–24 Months</span>
+          </div>
+          <h3 class="text-base font-bold text-white">Live Real-Time Stream Auditing</h3>
+          <ul class="space-y-2 text-xs text-slate-300">
+            <li class="flex items-start space-x-2">
+              <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5"></i>
+              <span><strong>Live Audio Fact-Checking:</strong> Real-time streaming transcription of live presidential debates, press conferences, and podcasts.</span>
+            </li>
+            <li class="flex items-start space-x-2">
+              <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5"></i>
+              <span><strong>Decentralized Consensus Ledger:</strong> Cross-institutional verification consensus among global university libraries & research foundations.</span>
+            </li>
+            <li class="flex items-start space-x-2">
+              <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5"></i>
+              <span><strong>Classroom Epistemic Curriculum:</strong> Interactive critical thinking software for schools to teach students how to audit digital media.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ==================== SLIDE 10: CONCLUSION & CALL TO ACTION ==================== -->
+    <section class="slide hidden w-full flex flex-col items-center text-center space-y-6" data-slide="10">
+      <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-medium">
+        <i data-lucide="award" class="w-4 h-4 text-cyan-400"></i>
+        <span>THE VERIJOURNAL MISSION</span>
+      </div>
+
+      <div class="space-y-3 max-w-4xl">
+        <h2 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white">
+          Reclaim Your <span class="bg-gradient-to-r from-cyan-400 via-indigo-400 to-emerald-400 bg-clip-text text-transparent">Epistemic Agency</span>.
+        </h2>
+        <p class="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+          Misinformation thrives on speed, panic, and confirmation bias. VeriJournal AI equips citizens, journalists, and researchers with evidence, transparency, and self-reflection.
+        </p>
+      </div>
+
+      <!-- Final Summary Metrics & Status -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl w-full pt-2">
+        <div class="glass-card p-4 rounded-xl border border-white/5 space-y-1">
+          <div class="text-2xl sm:text-3xl font-extrabold text-cyan-400 font-mono">100%</div>
+          <div class="text-xs text-white font-medium">Open Source Contract</div>
+          <div class="text-[10px] text-slate-400">OpenAPI 3.1 Certified</div>
+        </div>
+
+        <div class="glass-card p-4 rounded-xl border border-white/5 space-y-1">
+          <div class="text-2xl sm:text-3xl font-extrabold text-indigo-400 font-mono">9 Stages</div>
+          <div class="text-xs text-white font-medium">Asynchronous Worker</div>
+          <div class="text-[10px] text-slate-400">Cloud Tasks Architecture</div>
+        </div>
+
+        <div class="glass-card p-4 rounded-xl border border-white/5 space-y-1">
+          <div class="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono">0 Secrets</div>
+          <div class="text-xs text-white font-medium">Zero Client Leaks</div>
+          <div class="text-[10px] text-slate-400">Server ADC & Secret Mgr</div>
+        </div>
+
+        <div class="glass-card p-4 rounded-xl border border-white/5 space-y-1">
+          <div class="text-2xl sm:text-3xl font-extrabold text-amber-400 font-mono">100% Owner</div>
+          <div class="text-xs text-white font-medium">Tenant Isolated</div>
+          <div class="text-[10px] text-slate-400">Firestore Owner Security</div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row items-center gap-3 pt-4">
+        <button onclick="goToSlide(7)" class="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-white font-bold text-sm shadow-lg shadow-cyan-500/25 flex items-center space-x-2 transition transform hover:-translate-y-0.5">
+          <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+          <span>Rerun Live Demo Sandbox</span>
+        </button>
+        <button onclick="goToSlide(1)" class="px-5 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white text-sm font-medium transition">
+          Back to Beginning
+        </button>
+      </div>
+
+      <!-- Presenter Credentials Footer -->
+      <div class="text-xs text-slate-400 font-mono pt-4 border-t border-white/5 w-full max-w-2xl flex items-center justify-between">
+        <span>Project: VeriJournal AI</span>
+        <span>Lead Architect & Presenter</span>
+        <span>Questions & Discussion</span>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Navigation Dock -->
+  <footer class="relative z-30 px-6 py-3 border-t border-white/5 bg-dark-900/80 backdrop-blur-md flex items-center justify-between">
+    <div class="flex items-center space-x-2">
+      <button onclick="prevSlide()" class="px-3.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition flex items-center space-x-1.5 text-xs font-semibold">
+        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        <span>Previous</span>
+      </button>
+      <button onclick="nextSlide()" class="px-4 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 transition flex items-center space-x-1.5 text-xs font-semibold">
+        <span>Next Slide</span>
+        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- Slide Title Indicator -->
+    <div class="hidden md:flex items-center space-x-2 text-xs text-slate-400 font-mono">
+      <span class="text-slate-600">•</span>
+      <span id="slide-topic-name">Title & Overview</span>
+      <span class="text-slate-600">•</span>
+    </div>
+
+    <!-- Shortcuts Tip -->
+    <div class="flex items-center space-x-2 text-xs text-slate-500">
+      <span class="hidden sm:inline">Nav:</span>
+      <kbd class="px-1.5 py-0.5 bg-dark-800 border border-white/10 rounded font-mono text-[10px]">Space / Enter</kbd>
+    </div>
+  </footer>
+
+  <!-- ==================== MODAL 1: PRESENTER SPEAKER NOTES DRAWER ==================== -->
+  <div id="presenter-notes-drawer" class="fixed right-0 top-0 bottom-0 w-full sm:w-96 bg-dark-850/95 backdrop-blur-xl border-l border-white/10 p-6 z-50 transform translate-x-full transition-transform duration-300 flex flex-col shadow-2xl">
+    <div class="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
+      <div class="flex items-center space-x-2 text-amber-400 font-bold text-sm">
+        <i data-lucide="file-text" class="w-4 h-4"></i>
+        <span>SPEAKER NOTES & CUES</span>
+      </div>
+      <button onclick="togglePresenterNotes()" class="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- Dynamic Note Content by Slide -->
+    <div id="notes-content" class="flex-1 overflow-y-auto space-y-4 text-xs text-slate-300 leading-relaxed font-sans">
+      <!-- Injected via JavaScript -->
+    </div>
+
+    <div class="border-t border-white/10 pt-3 mt-3 flex justify-between items-center text-[11px] text-slate-500 font-mono">
+      <span>Tip: Press [N] to toggle</span>
+      <span id="notes-slide-index">Slide 1</span>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: SLIDE GRID SELECTOR OVERVIEW ==================== -->
+  <div id="slide-grid-modal" class="fixed inset-0 bg-dark-950/90 backdrop-blur-md z-50 hidden flex-col p-8 overflow-y-auto">
+    <div class="flex items-center justify-between max-w-6xl w-full mx-auto pb-6 border-b border-white/10">
+      <div class="flex items-center space-x-3">
+        <i data-lucide="layout-grid" class="w-6 h-6 text-cyan-400"></i>
+        <h3 class="text-xl font-bold text-white">Slide Directory</h3>
+      </div>
+      <button onclick="toggleGridOverview()" class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 max-w-6xl w-full mx-auto pt-8">
+      <!-- 10 Grid Buttons -->
+      <div onclick="goToSlide(1); toggleGridOverview();" class="glass-card p-3 rounded-xl border border-white/10 hover:border-cyan-500 cursor-pointer space-y-2">
+        <div class="text-[10px] font-mono text-cyan-400 font-bold">SLIDE 01</div>
+        <div class="text-xs font-semibold text-white">Title & Vision</div>
+      </div>
+      <div onclick="goToSlide(2); toggleGridOverview();" class="glass-card p-3 rounded-xl border border-white/10 hover:border-cyan-500 cursor-pointer space-y-2">
+        <div class="text-[10px] font-mono text-rose-400 font-bold">SLIDE 02</div>
+        <div class="text-xs font-semibold text-white">Video 1: Viral Panic</div>
+      </div>
+      <div onclick="goToSlide(3); toggleGridOverview();" class="glass-card p-3 rounded-xl border border-white/10 hover:border-cyan-500 cursor-pointer space-y-2">
+        <div class="text-[10px] font-mono text-cyan-400 font-bold">SLIDE 03</div>
+        <div class="text-xs font-semibold text-white">Video 2: 40-Tab Hell</div>
+      </div>
+      <div onclick="goToSlide(4); toggleGridOverview();" class="glass-card p-3 rounded-xl border border-white/10 hover:border-cyan-500 cursor-pointer space-y-2">
+        <div class="text-[10px] font-mono text-violet-400 font-bold">SLIDE 04</div>
+        <div class="text-xs font-semibold text-white">Video 3: Bias Paradox</div>
+      </div>
+      <div onclick="goToSlide(5); toggleGridOverview();" class="glass-card p-3 rounded-xl border border-white/10 hover:border-cyan-500 cursor-pointer space-y-2">
+        <div class="text-[10px] font-mono text-emerald-400 font-bold">SLIDE 05</div>
+        <div class="text-xs font-semibold text-white">Solution: VeriJournal</div>
+      </div>
+      <div onclick="goToSlide(6); toggleGridOverview();" class="glass-card p-3 rounded-xl border border-white/10 hover:border-cyan-500 cursor-pointer space-y-2">
+        <div class="text-[10px] font-mono text-indigo-400 font-bold">SLIDE 06</div>
+        <div class="text-xs font-semibold text-white">9-Stage Engine</div>
+      </div>
+      <div onclick="goToSlide(7); toggleGridOverview();" class="glass-card p-3 rounded-xl border border-white/10 hover:border-cyan-500 cursor-pointer space-y-2">
+        <div class="text-[10px] font-mono text-emerald-400 font-bold">SLIDE 07</div>
+        <div class="text-xs font-semibold text-white">Live Demo Sandbox</div>
+      </div>
+      <div onclick="goToSlide(8); toggleGridOverview();" class="glass-card p-3 rounded-xl border border-white/10 hover:border-cyan-500 cursor-pointer space-y-2">
+        <div class="text-[10px] font-mono text-indigo-400 font-bold">SLIDE 08</div>
+        <div class="text-xs font-semibold text-white">Trust & Security Model</div>
+      </div>
+      <div onclick="goToSlide(9); toggleGridOverview();" class="glass-card p-3 rounded-xl border border-white/10 hover:border-cyan-500 cursor-pointer space-y-2">
+        <div class="text-[10px] font-mono text-cyan-400 font-bold">SLIDE 09</div>
+        <div class="text-xs font-semibold text-white">Future Roadmap</div>
+      </div>
+      <div onclick="goToSlide(10); toggleGridOverview();" class="glass-card p-3 rounded-xl border border-white/10 hover:border-cyan-500 cursor-pointer space-y-2">
+        <div class="text-[10px] font-mono text-amber-400 font-bold">SLIDE 10</div>
+        <div class="text-xs font-semibold text-white">Mission & Q&A</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT SLIDE ENGINE -->
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 10;
+    let audioEnabled = true;
+    let notesOpen = false;
+    let gridOpen = false;
+
+    // Slide Titles for breadcrumb
+    const slideTitles = {
+      1: "Title & Hook: Reclaiming Epistemic Agency",
+      2: "Video Scenario 1: The Social Panic Crisis",
+      3: "Video Scenario 2: The 40-Tab Verification Hell",
+      4: "Video Scenario 3: The Confirmation Bias Trap",
+      5: "The Solution: Introducing VeriJournal AI",
+      6: "Under the Hood: 9-Stage Asynchronous Architecture",
+      7: "Interactive Live Demo Playbook",
+      8: "Enterprise Trust & Defense-in-Depth Model",
+      9: "Future Scope: Horizons 1, 2 & 3 Roadmap",
+      10: "Conclusion, Open Source & Q&A"
+    };
+
+    // Speaker Notes for each slide
+    const speakerNotes = {
+      1: `
+        <div class="space-y-3">
+          <p class="font-bold text-cyan-300 uppercase">🎯 Hook (30s):</p>
+          <p>"Good morning/afternoon everyone. Today, anyone with a smartphone can generate a hyper-realistic deepfake or post an unverified crisis claim in seconds. The cost to manufacture chaos is virtually zero, while the cost to verify the truth is breaking our institutions."</p>
+          <p class="font-bold text-emerald-300 uppercase">💡 Main Point:</p>
+          <p>"VeriJournal AI is an authenticated personal fact-checking platform that combines industrial-grade verification with introspective media literacy."</p>
+        </div>
+      `,
+      2: `
+        <div class="space-y-3">
+          <p class="font-bold text-rose-300 uppercase">🎬 Scenario 1 — Maya's Story:</p>
+          <p>"Here is Maya. A typical morning: her WhatsApp family chat blows up with a terrifying claim about drinking water poisoning. By noon, grocery shelves are empty."</p>
+          <p class="font-bold text-amber-300 uppercase">🔑 The Core Problem:</p>
+          <p>"Misinformation spreads 6 times faster than corrective news. Fact-checkers take 2 to 3 days to publish an article, but the damage is done in the first 2 hours."</p>
+        </div>
+      `,
+      3: `
+        <div class="space-y-3">
+          <p class="font-bold text-cyan-300 uppercase">🎬 Scenario 2 — David's Investigative Hell:</p>
+          <p>"Now look at the opposite side: the journalist or researcher trying to verify this. Look at David's screen: 40 tabs open. Reverse-searching keyframes, checking WHOIS DNS records, manually verifying against Google Fact Check Tools."</p>
+          <p class="font-bold text-indigo-300 uppercase">🔑 The Core Problem:</p>
+          <p>"It takes 4 to 6 hours to verify one single breaking claim. There is no unified pipeline, and dangerous links expose researchers to malware and SSRF vulnerabilities."</p>
+        </div>
+      `,
+      4: `
+        <div class="space-y-3">
+          <p class="font-bold text-violet-300 uppercase">🎬 Scenario 3 — The Epistemic Blindspot:</p>
+          <p>"Dr. Vance highlights the deepest problem: Human Psychology. When traditional fact-checkers slap a big red 'FALSE' sticker on a claim someone believed, it triggers the Backfire Effect. They dig their heels in."</p>
+          <p class="font-bold text-emerald-300 uppercase">🔑 The VeriJournal Innovation:</p>
+          <p>"We introduce Personal Epistemic Reflection. We let users track their own confidence shift (from intuition to evidence) in complete privacy, cultivating lifelong media discernment."</p>
+        </div>
+      `,
+      5: `
+        <div class="space-y-3">
+          <p class="font-bold text-emerald-300 uppercase">💡 The Solution Overview:</p>
+          <p>"VeriJournal AI brings together 4 core pillars: (1) An asynchronous 9-stage verification worker, (2) An auditable Evidence Ledger with categorical confidence, (3) An observed media timeline that separates first-observed appearances from today's claim, and (4) Personal Epistemic Reflection."</p>
+        </div>
+      `,
+      6: `
+        <div class="space-y-3">
+          <p class="font-bold text-indigo-300 uppercase">🛠️ Technical Deep Dive (2 mins):</p>
+          <p>"Walk through the 3 phases: Ingress & Defenses (SSRF safe pre-resolution & Safe Browsing v4), Phase 2 AI & RAG (Gemini 2.5 Vertex AI inside data-only envelopes & Google Fact Check Tools API), and Phase 3 Forensics (Cloud Vision Web Detection, Magic Bytes, and Firestore owner subcollections)."</p>
+          <p class="font-bold text-cyan-300 uppercase">🚀 Point out:</p>
+          <p>"Everything is non-blocking HTTP 202 Accepted backed by Google Cloud Tasks."</p>
+        </div>
+      `,
+      7: `
+        <div class="space-y-3">
+          <p class="font-bold text-emerald-300 uppercase">🎮 Live Demo Walkthrough (3-5 mins):</p>
+          <p>1. Click 'Execute 9-Stage Pipeline' to demonstrate the live async ticker.</p>
+          <p>2. Show how Stage 4 extracts atomic claims.</p>
+          <p>3. Toggle to the 'Evidence Ledger' tab to show verbatim supporting and contradicting citations.</p>
+          <p>4. Switch to 'Observed Timeline' to show chronology.</p>
+          <p>5. Switch to 'Epistemic Reflection' to highlight the +50% confidence shift delta.</p>
+          <p class="italic text-slate-400">Bonus: You can also flip to the live Vite web app at localhost:3000 to show the full interactive UI!</p>
+        </div>
+      `,
+      8: `
+        <div class="space-y-3">
+          <p class="font-bold text-cyan-300 uppercase">🔒 Security & Privacy Guarantees:</p>
+          <p>"Highlight our zero-trust posture: zero API keys on the client, strict tenant partitioning under users/{uid}/..., automatic GPS coordinate stripping to protect user privacy, and complete GDPR data portability and erasure."</p>
+        </div>
+      `,
+      9: `
+        <div class="space-y-3">
+          <p class="font-bold text-cyan-300 uppercase">🚀 Future Scope & Commercial Expansion:</p>
+          <p>"Horizon 1: Browser extension & WhatsApp/Telegram bots so verification lives where users consume news.</p>
+          <p>Horizon 2: C2PA hardware provenance and B2B enterprise newsroom APIs.</p>
+          <p>Horizon 3: Real-time audio stream auditing for live debates and podcasts."</p>
+        </div>
+      `,
+      10: `
+        <div class="space-y-3">
+          <p class="font-bold text-amber-300 uppercase">🎯 Conclusion & Q&A Wrap-Up:</p>
+          <p>"Thank you everyone! VeriJournal AI is ready, fully contract-tested, and built for scale. I would now love to take questions or dive deeper into any part of the architecture."</p>
+        </div>
+      `
+    };
+
+    // Synthesize subtle futuristic audio chime with Web Audio API
+    function playChime(freq = 520, type = 'sine') {
+      if (!audioEnabled) return;
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.5, audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.2);
+      } catch (e) {
+        // audio might be blocked before first user gesture
+      }
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      const btn = document.getElementById('btn-audio');
+      if (audioEnabled) {
+        btn.innerHTML = `<i data-lucide="volume-2" class="w-4 h-4 text-cyan-400"></i>`;
+        playChime(600);
+      } else {
+        btn.innerHTML = `<i data-lucide="volume-x" class="w-4 h-4 text-slate-500"></i>`;
+      }
+      lucide.createIcons();
+    }
+
+    function updateSlideUI() {
+      // Hide all slides
+      document.querySelectorAll('.slide').forEach(el => {
+        el.classList.add('hidden');
+        el.classList.remove('active');
+      });
+
+      // Show current slide
+      const currentEl = document.querySelector(`.slide[data-slide="${currentSlide}"]`);
+      if (currentEl) {
+        currentEl.classList.remove('hidden');
+        currentEl.classList.add('active');
+      }
+
+      // Update counters & progress
+      document.getElementById('slide-current').textContent = String(currentSlide).padStart(2, '0');
+      document.getElementById('progress-bar').style.width = `${(currentSlide / totalSlides) * 100}%`;
+      document.getElementById('slide-topic-name').textContent = slideTitles[currentSlide] || "";
+
+      // Update notes
+      document.getElementById('notes-content').innerHTML = speakerNotes[currentSlide] || "<p>No notes for this slide.</p>";
+      document.getElementById('notes-slide-index').textContent = `Slide ${currentSlide} of ${totalSlides}`;
+
+      lucide.createIcons();
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        currentSlide++;
+        playChime(540);
+        updateSlideUI();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        currentSlide--;
+        playChime(420);
+        updateSlideUI();
+      }
+    }
+
+    function goToSlide(slideNum) {
+      if (slideNum >= 1 && slideNum <= totalSlides) {
+        currentSlide = slideNum;
+        playChime(500);
+        updateSlideUI();
+      }
+    }
+
+    function togglePresenterNotes() {
+      notesOpen = !notesOpen;
+      const drawer = document.getElementById('presenter-notes-drawer');
+      if (notesOpen) {
+        drawer.classList.remove('translate-x-full');
+      } else {
+        drawer.classList.add('translate-x-full');
+      }
+    }
+
+    function toggleGridOverview() {
+      gridOpen = !gridOpen;
+      const modal = document.getElementById('slide-grid-modal');
+      if (gridOpen) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    // Keyboard shortcuts
+    window.addEventListener('keydown', (e) => {
+      // If modal open, Esc closes it
+      if (e.key === 'Escape') {
+        if (gridOpen) toggleGridOverview();
+        if (notesOpen) togglePresenterNotes();
+        return;
+      }
+
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'n' || e.key === 'N') {
+        togglePresenterNotes();
+      } else if (e.key === 'g' || e.key === 'G') {
+        toggleGridOverview();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullScreen();
+      } else if (e.key === 'd' || e.key === 'D') {
+        goToSlide(7);
+      }
+    });
+
+    // ==================== INTERACTIVE DEMO LOGIC ====================
+    let activeScenario = 'arctic';
+
+    const scenarios = {
+      arctic: {
+        type: 'ARTICLE_URL',
+        label: 'Target Investigation (Scientific Article):',
+        input: 'https://example-sci-daily.org/reports/arctic-shelf-measurements',
+        badge: 'SUPPORTED',
+        badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+        confidence: 'High Confidence',
+        title: 'Investigation: Satellite Imagery of Arctic Ice Shelves',
+        ledgerHTML: `
+          <div class="p-2.5 rounded-lg bg-dark-900 border border-emerald-500/20 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white">European Space Agency (ESA Sentinel)</span>
+              <span class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">SUPPORTS</span>
+            </div>
+            <p class="text-slate-300 text-[11px] italic">"Radar altimetry measurements indicate a 12.1 +/- 0.4% mean elevation reduction across sector B-17..."</p>
+            <div class="text-[10px] text-slate-400 font-mono">Published: 2026-03-01 • Primary telemetry verified</div>
+          </div>
+          <div class="p-2.5 rounded-lg bg-dark-900 border border-emerald-500/20 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white">NSIDC Monthly Data Archives</span>
+              <span class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">SUPPORTS</span>
+            </div>
+            <p class="text-slate-300 text-[11px] italic">"Independent passive microwave radiometry confirms regional thinning trends consistent with seasonal drift..."</p>
+            <div class="text-[10px] text-slate-400 font-mono">Published: 2026-02-28 • Peer-calibrated sensor logs</div>
+          </div>
+          <div class="p-2.5 rounded-lg bg-dark-900 border border-rose-500/20 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white">Climate-Critique Blog (Unverified)</span>
+              <span class="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 text-[10px] font-mono">CONTRADICTS</span>
+            </div>
+            <p class="text-slate-300 text-[11px] italic">"Claims radar reflection artifacts caused by wet snow melt distort satellite estimates by 20%."</p>
+            <div class="text-[10px] text-slate-400 font-mono">Published: 2026-03-01 • Self-published opinion blog</div>
+          </div>
+        `,
+        timelineHTML: `
+          <div class="p-2.5 rounded-lg bg-dark-900 border border-white/10 space-y-1">
+            <div class="flex justify-between text-cyan-400 text-[11px]">
+              <span>2026-02-14 • CLAIMED EVENT</span>
+              <span class="text-slate-500">Confidence: High</span>
+            </div>
+            <div class="text-white text-xs">Initial presentation of radar telemetry data at Oslo Glaciology Workshop.</div>
+          </div>
+          <div class="p-2.5 rounded-lg bg-dark-900 border border-white/10 space-y-1">
+            <div class="flex justify-between text-indigo-400 text-[11px]">
+              <span>2026-02-28 • PUBLISHED DATA</span>
+              <span class="text-slate-500">Confidence: High</span>
+            </div>
+            <div class="text-white text-xs">NSIDC monthly dispatch releases independent passive microwave datasets.</div>
+          </div>
+          <div class="p-2.5 rounded-lg bg-dark-900 border border-emerald-400 text-[11px]">
+            <span>2026-03-02 • FACT CHECK REVIEW</span>
+            <span class="text-slate-500">Confidence: High</span>
+          </div>
+          <div class="text-white text-xs">Fact Check Tools registers peer review by Climate Verification Desk.</div>
+        `,
+        reflectionHTML: `
+          <div class="p-3 rounded-lg bg-dark-900 border border-amber-500/30 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-amber-300">Epistemic Confidence Shift</span>
+              <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono font-bold">+50% Shift</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-[11px]">
+              <div class="p-2 rounded bg-white/5">
+                <span class="text-slate-400 block">Prior Intuition:</span>
+                <strong class="text-amber-400 font-mono">35% Confidence</strong>
+                <p class="text-slate-300 mt-1 italic">"Assumed the 12% figure was exaggerated clickbait."</p>
+              </div>
+              <div class="p-2 rounded bg-white/5">
+                <span class="text-slate-400 block">Post-Evidence:</span>
+                <strong class="text-emerald-400 font-mono">85% Confidence</strong>
+                <p class="text-slate-300 mt-1 italic">"Corroborated by ESA Sentinel raw altimetry."</p>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      protest: {
+        type: 'DIRECT_IMAGE',
+        label: 'Target Investigation (Viral Social Image):',
+        input: 'plaza_demonstration_geneva_claim.jpg (EXIF Stripped)',
+        badge: 'CONTRADICTED',
+        badgeClass: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+        confidence: 'High Confidence',
+        title: 'Provenance Check: Historical Plaza Gathering Photograph',
+        ledgerHTML: `
+          <div class="p-2.5 rounded-lg bg-dark-900 border border-rose-500/20 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white">Prague Municipal Culture Bureau</span>
+              <span class="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 text-[10px] font-mono">CONTRADICTS</span>
+            </div>
+            <p class="text-slate-300 text-[11px] italic">"Aerial photograph of Wenceslas Square during 2019 opening concert, showing identical architectural spires and stage lighting rig."</p>
+            <div class="text-[10px] text-slate-400 font-mono">Published: 2019-06-22 • Matches original municipal archive</div>
+          </div>
+          <div class="p-2.5 rounded-lg bg-amber-500/20 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white">Google Fact Check Tools API</span>
+              <span class="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[10px] font-mono">NO PRIOR CHECK</span>
+            </div>
+            <p class="text-slate-300 text-[11px] italic">"No accredited rating bureau had registered this specific recirculated crop before VeriJournal submission."</p>
+            <div class="text-[10px] text-slate-400 font-mono">Status: First verified by VeriJournal AI pipeline</div>
+          </div>
+        `,
+        timelineHTML: `
+          <div class="p-2.5 rounded-lg bg-dark-900 border border-white/10 space-y-1">
+            <div class="flex justify-between text-indigo-400 text-[11px]">
+              <span>2019-06-22 • OBSERVED MEDIA HISTORY</span>
+              <span class="text-slate-500">Confidence: High</span>
+            </div>
+            <div class="text-white text-xs">Earliest matching image discovered by Cloud Vision Web Detection on Prague municipal archive.</div>
+          </div>
+          <div class="p-2.5 rounded-lg bg-dark-900 border border-rose-500/20 space-y-1">
+            <div class="flex justify-between text-rose-400 text-[11px]">
+              <span>2026-09-04 • CLAIMED EVENT</span>
+              <span class="text-slate-500">Confidence: Low</span>
+            </div>
+            <div class="text-white text-xs">Viral social claim recirculated identical photo claiming to show Geneva protest.</div>
+          </div>
+        `,
+        reflectionHTML: `
+          <div class="p-3 rounded-lg bg-dark-900 border border-amber-500/30 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-amber-300">Epistemic Confidence Shift</span>
+              <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono font-bold">-60% Shift</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-[11px]">
+              <div class="p-2 rounded bg-white/5">
+                <span class="text-slate-400 block">Prior Intuition:</span>
+                <strong class="text-amber-400 font-mono">70% Believed</strong>
+                <p class="text-slate-300 mt-1 italic">"Looked convincing because a high-follower account posted it."</p>
+              </div>
+              <div class="p-2 rounded bg-white/5">
+                <span class="text-slate-400 block">Post-Evidence:</span>
+                <strong class="text-rose-400 font-mono">10% Confidence</strong>
+                <p class="text-slate-300 mt-1 italic">"Unambiguously proven to be recycled 2019 Prague concert footage."</p>
+              </div>
+            </div>
+          </div>
+        `
+      }
+    };
+
+    function loadDemoScenario(key) {
+      activeScenario = key;
+      const s = scenarios[key];
+      document.getElementById('demo-badge-type').textContent = s.type;
+      document.getElementById('demo-input-label').textContent = s.label;
+      document.getElementById('demo-input-box').textContent = s.input;
+      
+      document.getElementById('demo-result-badge').textContent = s.badge;
+      document.getElementById('demo-result-badge').className = `px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${s.badgeClass}`;
+      document.getElementById('demo-confidence-badge').textContent = s.confidence;
+      document.getElementById('demo-result-title').textContent = s.title;
+
+      document.getElementById('demo-pane-ledger').innerHTML = s.ledgerHTML;
+      document.getElementById('demo-pane-timeline').innerHTML = s.timelineHTML;
+      document.getElementById('demo-pane-reflection').innerHTML = s.reflectionHTML;
+
+      // Button styling
+      if (key === 'arctic') {
+        document.getElementById('btn-sample-arctic').className = "px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 text-xs font-medium transition";
+        document.getElementById('btn-sample-protest').className = "px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 text-xs font-medium transition";
+      } else {
+        document.getElementById('btn-sample-protest').className = "px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 text-xs font-medium transition";
+        document.getElementById('btn-sample-arctic').className = "px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 text-xs font-medium transition";
+      }
+
+      resetStageTicker();
+    }
+
+    function switchDemoTab(tab) {
+      document.getElementById('demo-pane-ledger').classList.add('hidden');
+      document.getElementById('demo-pane-timeline').classList.add('hidden');
+      document.getElementById('demo-pane-reflection').classList.add('hidden');
+
+      document.getElementById('demo-tab-ledger').className = "px-2.5 py-1 rounded text-slate-400 hover:text-white";
+      document.getElementById('demo-tab-timeline').className = "px-2.5 py-1 rounded text-slate-400 hover:text-white";
+      document.getElementById('demo-tab-reflection').className = "px-2.5 py-1 rounded text-slate-400 hover:text-white";
+
+      if (tab === 'ledger') {
+        document.getElementById('demo-pane-ledger').classList.remove('hidden');
+        document.getElementById('demo-tab-ledger').className = "px-2.5 py-1 rounded bg-cyan-500/20 text-cyan-300 font-medium";
+      } else if (tab === 'timeline') {
+        document.getElementById('demo-pane-timeline').classList.remove('hidden');
+        document.getElementById('demo-tab-timeline').className = "px-2.5 py-1 rounded bg-indigo-500/20 text-indigo-300 font-medium";
+      } else if (tab === 'reflection') {
+        document.getElementById('demo-pane-reflection').classList.remove('hidden');
+        document.getElementById('demo-tab-reflection').className = "px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 font-medium";
+      }
+    }
+
+    function resetStageTicker() {
+      for (let i = 1; i <= 9; i++) {
+        const stageEl = document.getElementById(`stage-${i}`);
+        const statusSpan = stageEl.querySelector('.stage-status');
+        statusSpan.textContent = "pending";
+        statusSpan.className = "stage-status text-slate-500";
+        stageEl.className = "flex items-center justify-between p-1.5 rounded bg-white/5 border border-white/5 text-slate-400";
+      }
+      document.getElementById('demo-status-text').textContent = "READY TO VERIFY";
+      document.getElementById('demo-status-text').className = "text-emerald-400 font-bold";
+      document.getElementById('btn-run-demo-text').textContent = "Execute 9-Stage Pipeline";
+    }
+
+    let isRunningDemo = false;
+    function triggerSimulatedPipeline() {
+      if (isRunningDemo) return;
+      isRunningDemo = true;
+      resetStageTicker();
+
+      document.getElementById('btn-run-demo-text').textContent = "Running Pipeline...";
+      document.getElementById('demo-status-text').textContent = "ASYNC PROCESSING (202 ACCEPTED)";
+      document.getElementById('demo-status-text').className = "text-cyan-400 font-bold animate-pulse";
+
+      let currentStep = 1;
+      const interval = setInterval(() => {
+        if (currentStep > 9) {
+          clearInterval(interval);
+          isRunningDemo = false;
+          document.getElementById('demo-status-text').textContent = "COMPLETE (200 OK)";
+          document.getElementById('demo-status-text').className = "text-emerald-400 font-bold";
+          document.getElementById('btn-run-demo-text').textContent = "Rerun Pipeline";
+          playChime(750);
+          return;
+        }
+
+        const stageEl = document.getElementById(`stage-${currentStep}`);
+        const statusSpan = stageEl.querySelector('.stage-status');
+        statusSpan.textContent = "✓ verified";
+        statusSpan.className = "stage-status text-emerald-400 font-bold";
+        stageEl.className = "flex items-center justify-between p-1.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-white";
+
+        playChime(350 + (currentStep * 40));
+        currentStep++;
+      }, 350);
+    }
+
+    // Initialize UI on load
+    window.addEventListener('DOMContentLoaded', () => {
+      updateSlideUI();
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>

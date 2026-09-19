@@ -1,0 +1,29 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": [
+    {
+      "rules": "storage.rules"
+    }
+  ],
+  "hosting": {
+    "public": "dist",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "/privacy",
+        "destination": "/privacy.html"
+      },
+      {
+        "source": "/google*.html",
+        "destination": "/google3c83117ed5dcb5a7.html"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

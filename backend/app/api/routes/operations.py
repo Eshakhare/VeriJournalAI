@@ -3,7 +3,7 @@ import hashlib
 import json
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, Response, status
 from fastapi.responses import JSONResponse
 
 from app.auth.firebase import UserPrincipal, get_current_user
@@ -91,6 +91,7 @@ async def cancel_operation(
 @router.post("/{operationId}/retry", response_model=OperationAccepted, status_code=status.HTTP_202_ACCEPTED)
 async def retry_operation(
     operationId: str,
+    background_tasks: BackgroundTasks,
     idempotency_key: str = Header(..., alias="Idempotency-Key"),
     user: UserPrincipal = Depends(get_current_user),
 ):
@@ -115,7 +116,7 @@ async def retry_operation(
             "error": None,
         },
     )
-    await tasks_publisher.enqueue_operation_task(operationId)
+    background_tasks.add_task(tasks_publisher.enqueue_operation_task, operationId)
 
     status_url = f"/api/v1/operations/{operationId}"
     return JSONResponse(

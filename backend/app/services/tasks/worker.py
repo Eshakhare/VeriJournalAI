@@ -32,6 +32,7 @@ from app.services.ai.gemini_gateway import gemini_gateway
 from app.services.fact_check.client import fact_check_client
 from app.services.media.image_processor import extract_exif, run_web_detection, verify_image_bytes
 from app.services.safe_browsing.client import safe_browsing_client
+from app.services.search.client import web_search_client
 from app.services.scraping.domain_context import domain_service
 from app.services.scraping.safe_fetch import safe_fetch_url
 
@@ -59,6 +60,8 @@ class VerificationWorker:
             logger.warning(f"Could not acquire lease for operation {operation_id}; skipping duplicate execution.")
             return
 
+        logger.info(f"Worker successfully acquired lease for {operation_id}")
+
         # Fetch operation from Firestore
         op = firestore_repo.mock.operations.get(operation_id) if not firestore_repo.client else None
         if not op and firestore_repo.client:
@@ -68,6 +71,8 @@ class VerificationWorker:
         if not op:
             logger.error(f"Operation {operation_id} not found in repository.")
             return
+
+        logger.info(f"Operation {operation_id} fetched successfully. Starting stage 1.")
 
         owner_uid = op.get("ownerUid")
         entry_id = op.get("entryId", operation_id)
@@ -145,6 +150,8 @@ class VerificationWorker:
             elif input_type in ("image", "video_upload"):
                 text_to_analyze = raw_input.get("accompanyingClaim") or "Media verification claim"
                 title = raw_input.get("filename") or "Media Investigation"
+            
+            partial_result.extractedText = text_to_analyze[:1000] + ("..." if len(text_to_analyze) > 1000 else "")
             completed_stages.append(OperationStage.extracting_content.value)
 
             # Stage 4: extracting_claims
@@ -168,7 +175,8 @@ class VerificationWorker:
 
             for claim in claims:
                 fc_res = await fact_check_client.search_claims(claim.claimText)
-                fact_check_status = FactCheckProviderStatus(fc_res.status)
+                if fc_res.status in ("matched", "no_match"):
+                    fact_check_status = FactCheckProviderStatus(fc_res.status)
                 if fc_res.status == "matched":
                     for item in fc_res.items:
                         eid = _id("evd")
@@ -204,7 +212,26 @@ class VerificationWorker:
                 await firestore_repo.update_operation(operation_id, {"state": OperationState.cancelled.value, "stage": OperationStage.complete.value})
                 return
 
+            if settings.rag_search_enabled:
+                for claim in claims:
+                    search_response = await web_search_client.search(claim.claimText)
+                    for result in search_response.results:
+                        evidence_items.append(
+                            EvidenceItem(
+                                evidenceId=_id("evd"),
+                                claimId=claim.claimId,
+                                sourceUrl=result.url,
+                                sourceTitle=result.title,
+                                publisher=result.publisher,
+                                stance=EvidenceStance.contextual,
+                                publishedAt=result.published_date,
+                                retrievedAt=_now_iso(),
+                                excerpt=result.content,
+                            )
+                        )
+
             synthesis = await gemini_gateway.synthesize_evidence(claims, evidence_items)
+            partial_result.evidenceStatus = synthesis.get("evidenceStatus")
             completed_stages.append(OperationStage.retrieving_evidence.value)
 
             # Stage 7: analyzing_media
@@ -225,15 +252,24 @@ class VerificationWorker:
                     exif_meta, gps_info = extract_exif(file_bytes, save_exact_gps=save_exact_gps)
                     earliest_match, matching_pages, media_limits = await run_web_detection(file_bytes)
 
+                    meta_dict = {
+                        "capture_date": exif_meta.capture_date,
+                        "camera_make": exif_meta.camera_make,
+                        "camera_model": exif_meta.camera_model,
+                        "software": exif_meta.software,
+                        "gps": gps_info
+                    }
+                    consistency = await gemini_gateway.analyze_media_consistency(claims, meta_dict, matching_pages)
+
                     media_summary = MediaSummary(
                         mediaId=media_id,
                         mediaType="image",
                         metadataStatus="complete" if exif_meta.capture_date else "partial",
                         exactGpsSaved=save_exact_gps and bool(gps_info and "latitude" in gps_info),
                         c2paStatus="not_present",
-                        dateConsistency=ConsistencyStatus.consistent if exif_meta.capture_date else ConsistencyStatus.unknown,
-                        locationConsistency=ConsistencyStatus.consistent if gps_info else ConsistencyStatus.unknown,
-                        priorContextConsistency=ConsistencyStatus.consistent if not matching_pages else ConsistencyStatus.unknown,
+                        dateConsistency=consistency["dateConsistency"],
+                        locationConsistency=consistency["locationConsistency"],
+                        priorContextConsistency=consistency["priorContextConsistency"],
                         earliestObservedMatchAt=earliest_match,
                         limitations=media_limits,
                     )
@@ -251,6 +287,7 @@ class VerificationWorker:
                                 dateConfidence=EvidenceConfidence.medium,
                             )
                         )
+                partial_result.mediaSummary = media_summaries
                 completed_stages.append(OperationStage.analyzing_media.value)
 
             # Stage 8: building_timeline
@@ -271,6 +308,7 @@ class VerificationWorker:
                         dateConfidence=EvidenceConfidence.high,
                     )
                 )
+            partial_result.timelineEventsCount = len(timeline_events)
             completed_stages.append(OperationStage.building_timeline.value)
 
             # Stage 9: saving_report

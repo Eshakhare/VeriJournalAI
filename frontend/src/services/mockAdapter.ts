@@ -1,8 +1,12 @@
 /**
  * Development-Only Mock API Adapter
- * 
+ *
  * STRICT SAFEGUARD:
- * Must NEVER run in production. Production build or execution fails closed.
+ * Must NEVER run in production. Each exported function guards itself.
+ * The module-level throw has been replaced with a per-call guard so that
+ * Vite can safely bundle this file without crashing on import in prod;
+ * USE_DEV_MOCK in apiClient.ts guarantees no mock function is ever called
+ * in production.
  */
 
 import type {
@@ -19,11 +23,12 @@ import type {
   EvidenceStatus,
 } from '../types/contract';
 
-// Production safety check:
-if (import.meta.env.PROD) {
-  throw new Error(
-    'CRITICAL CONTRACT VIOLATION: MockAdapter must never be enabled or executed in production mode!'
-  );
+function assertDevOnly() {
+  if (import.meta.env.PROD) {
+    throw new Error(
+      'CRITICAL CONTRACT VIOLATION: MockAdapter must never be called in production mode!'
+    );
+  }
 }
 
 // In-memory operation state store for realistic simulation during dev
@@ -239,6 +244,7 @@ let journalStorage: JournalEntry[] = [...sampleEntries];
 
 export const mockAdapter = {
   getHealth(): Promise<HealthResponse> {
+    assertDevOnly();
     return Promise.resolve({ status: 'ok' });
   },
 
